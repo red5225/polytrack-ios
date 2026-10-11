@@ -58,16 +58,20 @@ jobs:
           set -euo pipefail
           APP_PATH="$RUNNER_TEMP/DerivedData-iPhone/Build/Products/Release-iphoneos/PolyTrack.app"
           test -d "$APP_PATH"
-          test -f "$APP_PATH/Game/index.html"
+          test -s "$APP_PATH/Game/index.html"
+          test -s "$APP_PATH/Game/main.bundle.js"
+          test -s "$APP_PATH/Game/simulation_worker.bundle.js"
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           cp -R "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/PolyTrack.app"
           IPA_PATH="$GITHUB_WORKSPACE/PolyTrack-Offline-v0.5.0-unsigned.ipa"
           (cd "$RUNNER_TEMP/ipa" && /usr/bin/zip -qry "$IPA_PATH" Payload)
           test -s "$IPA_PATH"
-          unzip -Z1 "$IPA_PATH" > "$RUNNER_TEMP/ipa/contents.txt"
-          grep -F 'Payload/PolyTrack.app/Game/index.html' "$RUNNER_TEMP/ipa/contents.txt"
-          grep -F 'Payload/PolyTrack.app/Game/main.bundle.js' "$RUNNER_TEMP/ipa/contents.txt"
-          grep -F 'Payload/PolyTrack.app/Game/simulation_worker.bundle.js' "$RUNNER_TEMP/ipa/contents.txt"
+          unzip -t "$IPA_PATH"
+          echo "IPA archive entries:"
+          unzip -Z1 "$IPA_PATH" | head -n 40
+          unzip -Z1 "$IPA_PATH" | grep -q 'index.html'
+          unzip -Z1 "$IPA_PATH" | grep -q 'main.bundle.js'
+          unzip -Z1 "$IPA_PATH" | grep -q 'simulation_worker.bundle.js'
           ls -lh "$IPA_PATH"
 
       - name: Build for iOS Simulator
