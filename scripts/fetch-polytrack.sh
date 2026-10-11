@@ -45,92 +45,9 @@ html, removed = re.subn(
 if removed != 1:
     raise SystemExit("Expected fork promo/leave-warning script was not found; refusing to build with the broken popup code")
 
-fullscreen_css = """
-/* Full-bleed layout for portrait and landscape iPhone screens. */
-html, body {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  overflow: hidden !important;
-  background: #000 !important;
-  overscroll-behavior: none;
-  touch-action: none;
-}
-#screen, #ui, #transition-layer {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  height: 100dvh !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: none !important;
-  max-height: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-}
-#screen { display: block !important; }
-#screen canvas, canvas {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  max-height: none !important;
-}
-@media (orientation: landscape) {
-  html, body, #screen, #ui, #transition-layer {
-    width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-  }
-}
-"""
-if "</style>" in html.lower():
-    html = re.sub(r"</style>", lambda m: fullscreen_css + "\n" + m.group(0), html, count=1, flags=re.IGNORECASE)
-else:
-    html = re.sub(r"</head>", "<style>" + fullscreen_css + "</style>\n</head>", html, count=1, flags=re.IGNORECASE)
-
-# Defensive cleanup if the promotion is inserted dynamically by another
-# fork script in a future upstream revision.
-promo_script = r"""
-<script>
-(function () {
-  const promo = /more\s+games\s+by\s+static/i;
-  function removePromo() {
-    document.querySelectorAll('a,button,[role="button"],div,section,aside').forEach(function (el) {
-      if (!el.isConnected || !promo.test((el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim())) return;
-      let target = el;
-      for (let i = 0; i < 4 && target.parentElement; i++) {
-        const parent = target.parentElement;
-        if (/^(A|BUTTON)$/.test(parent.tagName) || parent.id === 'staticMenu' || parent.id === 'staticSlideMenu') {
-          target = parent;
-        } else if (parent.children.length <= 2 && (parent.innerText || '').length < 180) {
-          target = parent;
-        } else {
-          break;
-        }
-      }
-      target.remove();
-    });
-  }
-  removePromo();
-  new MutationObserver(removePromo).observe(document.documentElement, { childList: true, subtree: true });
-  window.addEventListener('load', removePromo);
-})();
-</script>
-"""
-if "</body>" in html.lower():
-    html = re.sub(r"</body>", lambda m: promo_script + "\n" + m.group(0), html, count=1, flags=re.IGNORECASE)
-else:
-    html += promo_script
-
+# Keep the upstream game's own canvas and UI sizing logic. The fork promo
+# HTML and its animation script were removed above; do not add broad DOM
+# observers or force #ui/canvas dimensions here.
 config = '<script>window.polytrackModConfiguration = {modName: "PolyTrack iOS Offline", author: "red5225", unblocked: true};</script>\n'
 if "polytrackModConfiguration" not in html:
     match = re.search(r"<head[^>]*>", html, flags=re.IGNORECASE)
@@ -141,7 +58,7 @@ if "polytrackModConfiguration" not in html:
 path.write_text(html, encoding="utf-8")
 PY
 
-echo "Prepared fullscreen PolyTrack assets and removed the fork promo script that crashed loading."
+echo "Prepared PolyTrack assets; removed fork promo markup and its crashing script without overriding game layout."
 du -sh "$DEST"
 test -f "$DEST/index.html"
 test -f "$DEST/main.bundle.js"
