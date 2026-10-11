@@ -61,10 +61,14 @@ jobs:
           test -f "$APP_PATH/Game/index.html"
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           cp -R "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/PolyTrack.app"
-          (cd "$RUNNER_TEMP/ipa" && /usr/bin/zip -qry "$GITHUB_WORKSPACE/PolyTrack-Offline-v0.5.0-unsigned.ipa" Payload)
-          test -s PolyTrack-Offline-v0.5.0-unsigned.ipa
-          unzip -l PolyTrack-Offline-v0.5.0-unsigned.ipa | grep -E 'Payload/PolyTrack.app/Game/(index.html|main.bundle.js|simulation_worker.bundle.js)'
-          ls -lh PolyTrack-Offline-v0.5.0-unsigned.ipa
+          IPA_PATH="$GITHUB_WORKSPACE/PolyTrack-Offline-v0.5.0-unsigned.ipa"
+          (cd "$RUNNER_TEMP/ipa" && /usr/bin/zip -qry "$IPA_PATH" Payload)
+          test -s "$IPA_PATH"
+          unzip -Z1 "$IPA_PATH" > "$RUNNER_TEMP/ipa/contents.txt"
+          grep -F 'Payload/PolyTrack.app/Game/index.html' "$RUNNER_TEMP/ipa/contents.txt"
+          grep -F 'Payload/PolyTrack.app/Game/main.bundle.js' "$RUNNER_TEMP/ipa/contents.txt"
+          grep -F 'Payload/PolyTrack.app/Game/simulation_worker.bundle.js' "$RUNNER_TEMP/ipa/contents.txt"
+          ls -lh "$IPA_PATH"
 
       - name: Build for iOS Simulator
         run: |
