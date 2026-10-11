@@ -58,9 +58,15 @@ jobs:
           set -euo pipefail
           APP_PATH="$RUNNER_TEMP/DerivedData-iPhone/Build/Products/Release-iphoneos/PolyTrack.app"
           test -d "$APP_PATH"
+          # Ensure the game ships as a real Game folder inside the app bundle.
+          # This also handles XcodeGen resource-folder layout differences.
+          mkdir -p "$APP_PATH/Game"
+          ditto PolyTrackIOS/Game "$APP_PATH/Game"
+          echo "Bundled game files inside app:"
           test -s "$APP_PATH/Game/index.html"
           test -s "$APP_PATH/Game/main.bundle.js"
           test -s "$APP_PATH/Game/simulation_worker.bundle.js"
+          du -sh "$APP_PATH/Game"
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           cp -R "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/PolyTrack.app"
           IPA_PATH="$GITHUB_WORKSPACE/PolyTrack-Offline-v0.5.0-unsigned.ipa"
@@ -103,6 +109,8 @@ jobs:
           set -euo pipefail
           APP_PATH="$RUNNER_TEMP/DerivedData-Simulator/Build/Products/Release-iphonesimulator/PolyTrack.app"
           test -d "$APP_PATH"
+          mkdir -p "$APP_PATH/Game"
+          ditto PolyTrackIOS/Game "$APP_PATH/Game"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-iOS-Simulator.zip
 
       - name: Upload unsigned IPA
