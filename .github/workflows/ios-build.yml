@@ -66,12 +66,23 @@ jobs:
           IPA_PATH="$GITHUB_WORKSPACE/PolyTrack-Offline-v0.5.0-unsigned.ipa"
           (cd "$RUNNER_TEMP/ipa" && /usr/bin/zip -qry "$IPA_PATH" Payload)
           test -s "$IPA_PATH"
-          unzip -t "$IPA_PATH"
-          echo "IPA archive entries:"
-          unzip -Z1 "$IPA_PATH" | head -n 40
-          unzip -Z1 "$IPA_PATH" | grep -q 'index.html'
-          unzip -Z1 "$IPA_PATH" | grep -q 'main.bundle.js'
-          unzip -Z1 "$IPA_PATH" | grep -q 'simulation_worker.bundle.js'
+          python3 - "$IPA_PATH" <<'PY'
+          import sys
+          import zipfile
+          path = sys.argv[1]
+          with zipfile.ZipFile(path) as ipa:
+              names = ipa.namelist()
+              bad_file = ipa.testzip()
+              if bad_file:
+                  raise SystemExit(f"Corrupt IPA entry: {bad_file}")
+              expected = ("Game/index.html", "Game/main.bundle.js", "Game/simulation_worker.bundle.js")
+              for suffix in expected:
+                  matches = [name for name in names if name.endswith(suffix)]
+                  if not matches:
+                      print("\n".join(names[:100]))
+                      raise SystemExit(f"Missing bundled game file in IPA: {suffix}")
+                  print(matches[0])
+          PY
           ls -lh "$IPA_PATH"
 
       - name: Build for iOS Simulator
