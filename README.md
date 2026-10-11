@@ -1,19 +1,19 @@
 # PolyTrack iOS Offline
 
-An unofficial, non-commercial iOS app shell that bundles an archived, self-contained PolyTrack browser build from an unofficial static-asset repository into the app bundle. It loads local files instead of the live game website.
+An unofficial, non-commercial iOS app shell that bundles an archived PolyTrack browser build into the app. It serves the bundled files through a loopback HTTP server on the device instead of loading the game from a `file://` URL or the live game website.
 
 ## What is included
 
 - Bundled PolyTrack **v0.5.2** browser files, including game scripts, models, tracks, images, audio and fonts available in the archive.
 - Full-screen gameplay with the iOS status bar hidden.
-- Local file loading, so core gameplay and included tracks can work without an internet connection.
-- A credits/about screen with required attribution and links.
+- On-device loopback serving so browser workers and the archived game's host check can work with a normal local HTTP origin.
+- A credits/about screen with attribution and links.
 
 **Version note:** this intentionally bundles archived v0.5.2, not the newer official release. Features that depend on Kodub's servers—including online leaderboards, multiplayer and community services—may not work offline. This has not been verified as a fully offline replacement for every feature.
 
 ## Build and get the IPA
 
-GitHub Actions downloads the archived game files during the build, injects the required mod configuration, verifies that the main game files are present, and packages the unsigned iOS app.
+GitHub Actions downloads the archived game files during the build, patches the archive's documented host allow-list to the local loopback host, verifies the main game files, and packages the unsigned iOS app.
 
 1. Open the [Actions workflow](https://github.com/red5225/polytrack-ios/actions/workflows/ios-build.yml).
 2. Open the latest successful **Build iOS app** run.
@@ -41,4 +41,4 @@ PolyTrack was created by **Kodub**. This is an unofficial, non-commercial port a
 - Terms of Service: https://www.kodub.com/terms/polytrack
 - Unofficial static-asset archive used for the v0.5.2 files: https://github.com/StaticQuasar931/polytrack-0.5.2
 
-This project does not claim ownership of PolyTrack or its game assets. The bundled archive is downloaded at build time, not committed to this repository. The selected 0.5.2 repository notes that its bundle expects an allowed hosted origin; local iOS file loading may need additional compatibility work, so a successful compile does not guarantee the game starts. Review the original creator's current terms before redistributing builds; the terms require non-commercial use, attribution, an obvious unofficial notice, and preservation of outbound links.
+This project does not claim ownership of PolyTrack or its game assets. The bundled archive is downloaded at build time, not committed to this repository. Review the original creator's current terms before redistributing builds; the terms require non-commercial use, attribution, an obvious unofficial notice, and preservation of outbound links.

@@ -21,29 +21,47 @@ struct PolyTrackWebView: UIViewRepresentable {
         webView.scrollView.isScrollEnabled = false
         webView.navigationDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = false
-        loadGame(in: webView)
+        loadGame(in: webView, coordinator: context.coordinator)
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         if context.coordinator.lastReloadToken != reloadToken {
             context.coordinator.lastReloadToken = reloadToken
-            loadGame(in: webView)
+            loadGame(in: webView, coordinator: context.coordinator)
         }
     }
 
-    private func loadGame(in webView: WKWebView) {
+    private func loadGame(in webView: WKWebView, coordinator: Coordinator) {
         guard let gameURL = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "Game") else {
             isLoading = false
             loadFailed = true
             return
         }
-        webView.loadFileURL(gameURL, allowingReadAccessTo: gameURL.deletingLastPathComponent())
+
+        isLoading = true
+        loadFailed = false
+        coordinator.localServer?.stop()
+        let server = PolyTrackLocalServer(rootURL: gameURL.deletingLastPathComponent())
+        coordinator.localServer = server
+        server.start { [weak coordinator, weak webView] result in
+            DispatchQueue.main.async {
+                guard let coordinator, let webView else { return }
+                switch result {
+                case .success(let url):
+                    webView.load(URLRequest(url: url))
+                case .failure:
+                    coordinator.parent.isLoading = false
+                    coordinator.parent.loadFailed = true
+                }
+            }
+        }
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
         var parent: PolyTrackWebView
         var lastReloadToken: UUID
+        var localServer: PolyTrackLocalServer?
 
         init(parent: PolyTrackWebView) {
             self.parent = parent
