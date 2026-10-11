@@ -79,11 +79,21 @@ struct PolyTrackWebView: UIViewRepresentable {
         try fileManager.createDirectory(at: appFolder, withIntermediateDirectories: true)
 
         let index = editableGame.appendingPathComponent("index.html")
+        let bundledVersionURL = bundledGame.appendingPathComponent(".polytrack-ios-version")
+        let editableVersionURL = editableGame.appendingPathComponent(".polytrack-ios-version")
+        let bundledVersion = (try? String(contentsOf: bundledVersionURL, encoding: .utf8))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let editableVersion = (try? String(contentsOf: editableVersionURL, encoding: .utf8))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
         if !fileManager.fileExists(atPath: index.path) {
             if fileManager.fileExists(atPath: editableGame.path) {
                 try fileManager.removeItem(at: editableGame)
             }
             try fileManager.copyItem(at: bundledGame, to: editableGame)
+        } else if let bundledVersion, bundledVersion != editableVersion {
+            // Upgrade core game files once per bundled version while preserving extra files.
+            try mergeBundledFiles(from: bundledGame, to: editableGame)
         }
 
         // One-time cleanup for existing installs that still have the old in-game mods patch.
@@ -112,19 +122,54 @@ struct PolyTrackWebView: UIViewRepresentable {
             if fileManager.fileExists(atPath: editableError.path) { try? fileManager.removeItem(at: editableError) }
             try fileManager.copyItem(at: bundledError, to: editableError)
         }
-        if var html = try? String(contentsOf: index, encoding: .utf8) {
-            html = html.replacingOccurrences(of: "<script defer src=\"./mods.js\"></script>", with: "")
-            let errorTag = "<script defer src=\"./error-failsafe.js\"></script>"
-            if !html.contains(errorTag), let headEnd = html.range(of: "</head>", options: .caseInsensitive) {
-                html.insert(contentsOf: "\n\(errorTag)\n", at: headEnd.lowerBound)
-                try html.write(to: index, atomically: true, encoding: .utf8)
-            } else if !html.contains(errorTag) {
-                throw GameFilesError.bundledFilesMissing
-            } else if !html.contains("./mods.js") {
-                try html.write(to: index, atomically: true, encoding: .utf8)
+        if let html = try? String(contentsOf: index, encoding: .utf8) {
+            var updatedHTML = html.replacingOccurrences(
+                of: "<script defer src=\\\"./mods.js\\\"></script>",
+                with: ""
+            )
+            let errorTag = "<script defer src=\\\"./error-failsafe.js\\\"></script>"
+            if !updatedHTML.contains(errorTag) {
+                guard let headEnd = updatedHTML.range(of: "</head>", options: .caseInsensitive) else {
+                    throw GameFilesError.bundledFilesMissing
+                }
+                updatedHTML.insert(contentsOf: "\\n\\(errorTag)\\n", at: headEnd.lowerBound)
+            }
+            if updatedHTML != html {
+                try updatedHTML.write(to: index, atomically: true, encoding: .utf8)
             }
         }
         return editableGame
+    }
+
+    private func mergeBundledFiles(from source: URL, to destination: URL) throws {
+        let fileManager = FileManager.default
+        try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
+        let items = try fileManager.contentsOfDirectory(
+            at: source,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: []
+        )
+        for item in items {
+            let target = destination.appendingPathComponent(item.lastPathComponent)
+            let isDirectory = ((try? item.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory) ?? false
+            let targetExists = fileManager.fileExists(atPath: target.path)
+            let targetIsDirectory = targetExists
+                ? (((try? target.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory) ?? false)
+                : false
+
+            if isDirectory {
+                if targetExists && !targetIsDirectory {
+                    try fileManager.removeItem(at: target)
+                }
+                try fileManager.createDirectory(at: target, withIntermediateDirectories: true)
+                try mergeBundledFiles(from: item, to: target)
+            } else {
+                if targetExists {
+                    try fileManager.removeItem(at: target)
+                }
+                try fileManager.copyItem(at: item, to: target)
+            }
+        }
     }
 
     private func loadGame(in webView: WKWebView, coordinator: Coordinator) {

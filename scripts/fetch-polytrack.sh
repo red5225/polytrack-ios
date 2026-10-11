@@ -1,64 +1,101 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ARCHIVE_REPO="https://github.com/StaticQuasar931/polytrack-0.5.2.git"
-DEST="PolyTrackIOS/Game"
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SOURCE_DIR="$ROOT_DIR/saveweb2zip-com-historicalmathematics-xyz"
+DEST="$ROOT_DIR/PolyTrackIOS/Game"
+BASE_URL="https://historicalmathematics.xyz"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-git clone --depth 1 "$ARCHIVE_REPO" "$TMP_DIR/archive"
-test -f "$TMP_DIR/archive/index.html"
-test -f "$TMP_DIR/archive/main.bundle.js"
-test -f "$TMP_DIR/archive/simulation_worker.bundle.js"
-
+# Keep the uploaded v0.6.0 game bundle and fill its missing runtime assets.
+for file in index.html js/main.bundle.js js/error_screen.bundle.js js/lb.js js/manifest.json fonts/forced_square.woff2 images/logo.svg images/discord.svg; do
+  test -s "$SOURCE_DIR/$file" || { echo "Missing uploaded game file: $SOURCE_DIR/$file" >&2; exit 1; }
+done
 rm -rf "$DEST"
-mkdir -p "$DEST"
-cp -R "$TMP_DIR/archive/." "$DEST/"
+mkdir -p "$DEST/images"
+cp "$SOURCE_DIR/index.html" "$DEST/index.html"
+cp "$SOURCE_DIR/js/main.bundle.js" "$DEST/main.bundle.js"
+cp "$SOURCE_DIR/js/error_screen.bundle.js" "$DEST/error_screen.bundle.js"
+cp "$SOURCE_DIR/js/lb.js" "$DEST/lb.js"
+cp "$SOURCE_DIR/js/manifest.json" "$DEST/manifest.json"
+cp "$SOURCE_DIR/fonts/forced_square.woff2" "$DEST/forced_square.woff2"
+cp -R "$SOURCE_DIR/images/." "$DEST/images/"
 
 python3 - "$DEST/index.html" <<'PY'
 from pathlib import Path
-import re
-import sys
-
+import re, sys
 path = Path(sys.argv[1])
 html = path.read_text(encoding="utf-8")
-
-# Remove the fork-added promo containers.
-for pattern in (
-    r'<div\s+id="staticMenu"[^>]*>.*?</div\s*>',
-    r'<div\s+id="staticSlideMenu"[^>]*>.*?</div\s*>',
-    r'<div\s+class="seo-hidden"[^>]*>.*?</div\s*>',
-):
-    html = re.sub(pattern, "", html, count=1, flags=re.IGNORECASE | re.DOTALL)
-
-# The fork's promo animation script dereferences the removed promo elements.
-html, removed = re.subn(
-    r'<script\b[^>]*>\s*//\s*Leave warning.*?</script\s*>',
-    "",
-    html,
-    count=1,
-    flags=re.IGNORECASE | re.DOTALL,
+html = re.sub(
+    r'\s*<!--\s*Google tag \(gtag\.js\)\s*-->.*?</script>\s*<script>\s*window\.dataLayer\s*=.*?</script>',
+    '', html, count=1, flags=re.IGNORECASE | re.DOTALL
 )
-if removed != 1:
-    raise SystemExit("Expected fork promo/leave-warning script was not found; refusing to build with the broken popup code")
-
-config = '<script>window.polytrackModConfiguration = {modName: "PolyTrack iOS Offline", author: "red5225", unblocked: true};</script>\n'
-if "polytrackModConfiguration" not in html:
-    match = re.search(r"<head[^>]*>", html, flags=re.IGNORECASE)
-    if not match:
-        raise SystemExit("Could not find HTML head element for game configuration")
-    html = html[:match.end()] + "\n" + config + html[match.end():]
-
-# Keep the native wrapper free of in-game mods; retain only a small non-blocking error notice.
+for old, new in (
+    ("fonts/forced_square.woff2", "forced_square.woff2"),
+    ("js/manifest.json", "manifest.json"),
+    ("js/error_screen.bundle.js", "error_screen.bundle.js"),
+    ("js/lb.js", "lb.js"),
+    ("js/main.bundle.js", "main.bundle.js"),
+):
+    html = html.replace(old, new)
+html = re.sub(r'<script\b[^>]*src=["\'](?:\./)?mods\.js["\'][^>]*>\s*</script\s*>', '', html, flags=re.I)
 error_tag = '<script defer src="./error-failsafe.js"></script>'
 if error_tag not in html:
     match = re.search(r"</head\s*>", html, flags=re.IGNORECASE)
     if not match:
-        raise SystemExit("Could not find closing head element for error fail-safe")
+        raise SystemExit("Could not find closing head element")
     html = html[:match.start()] + error_tag + "\n" + html[match.start():]
-
 path.write_text(html, encoding="utf-8")
 PY
+
+download_asset() {
+  local path="$1" target="$DEST/$1" tmp
+  [[ -s "$target" ]] && return 0
+  mkdir -p "$(dirname "$target")"
+  tmp="$(mktemp "$TMP_DIR/asset.XXXXXX")"
+  echo "Fetching $path"
+  if ! curl --fail --location --silent --show-error --retry 3 --retry-all-errors "$BASE_URL/$path" -o "$tmp"; then
+    rm -f "$tmp"; echo "Failed to fetch: $path" >&2; return 1
+  fi
+  if ! python3 - "$tmp" "$path" <<'PY'
+from pathlib import Path
+import sys
+data = Path(sys.argv[1]).read_bytes()
+name = sys.argv[2].lower()
+if not data or data.lstrip().lower().startswith((b"<!doctype html", b"<html")): raise SystemExit(1)
+if name.endswith(".wasm") and not data.startswith(b"\x00asm"): raise SystemExit(1)
+if name.endswith(".track") and not data.startswith(b"PolyTrack2"): raise SystemExit(1)
+PY
+  then
+    rm -f "$tmp"; echo "Invalid source response for: $path" >&2; return 1
+  fi
+  mv "$tmp" "$target"
+}
+
+for asset in simulation_worker.bundle.js polytrack_physics.wasm forced_square.json lib/draco/draco_decoder.wasm 124.bundle.js 142.bundle.js 168.bundle.js 280.bundle.js 57.bundle.js 789.bundle.js 982.bundle.js; do
+  download_asset "$asset"
+done
+
+python3 - "$DEST" "$TMP_DIR/assets.txt" <<'PY'
+from pathlib import Path
+import re, sys
+root = Path(sys.argv[1])
+out = Path(sys.argv[2])
+scripts = list(root.glob("*.js"))
+path_re = re.compile(r"""['"]((?:images|models|audio|tracks|lib)/[^'"]+\.(?:svg|png|jpe?g|webp|glb|gltf|ogg|mp3|track|wasm|json|woff2?|ttf))['"]""", re.I)
+official_re = re.compile(r"""['"]((?:summer|winter|desert)\d+\.track)['"]""", re.I)
+assets = {"polytrack_physics.wasm", "forced_square.json", "forced_square.woff2", "lib/draco/draco_decoder.wasm"}
+for script in scripts:
+    content = script.read_text(encoding="utf-8", errors="ignore")
+    assets.update(path_re.findall(content))
+    assets.update("tracks/official/" + name for name in official_re.findall(content))
+out.write_text("\\n".join(sorted(assets)) + "\\n", encoding="utf-8")
+print("Found", len(assets), "static assets across", len(scripts), "JavaScript files.")
+PY
+while IFS= read -r asset; do
+  [[ -n "$asset" ]] && download_asset "$asset"
+done < "$TMP_DIR/assets.txt"
 
 cat > "$DEST/error-failsafe.js" <<'JS'
 /* Non-blocking error notice; this does not add gameplay mods or alter physics. */
@@ -92,27 +129,36 @@ cat > "$DEST/error-failsafe.js" <<'JS'
 JS
 
 cat > "$DEST/GAME-FILES.txt" <<'TXT'
-POLYTRACK IOS — EDITABLE GAME FILES
+POLYTRACK IOS — EDITABLE GAME FILES (v0.6.0)
 
 Files location: On My iPhone > PolyTrack > Game
-The app copies the bundled game into this folder on first launch and serves the copy. Edits are kept between launches.
+The app copies the bundled v0.6.0 game into this folder on first launch and serves the copy. Edits persist between launches.
 
 index.html is the game page. main.bundle.js and simulation_worker.bundle.js are compiled game code. tracks/, models/, and images/ contain assets. Keep a backup before editing code or assets.
 
-The native app's Settings screen contains app-level options and the saved-data reset control. No in-game mods or cheat menu are included.
+The native app Settings screen contains app-level options and the saved-data reset control. No in-game cheat menu or gameplay physics modifications are included.
 
 GitHub Actions creates an unsigned IPA; it does not install the app automatically. Download the IPA artifact from a successful workflow run and sign/sideload it with AltStore/SideStore or Sideloadly using a Mac/PC and your own Apple ID. Tapping an unsigned IPA in Files will not install it.
 
 The Reset Saved Data action clears website storage only. It does not delete editable files in this folder.
 TXT
 
-echo "Prepared clean PolyTrack assets, removed the fork promo crash, and added the non-blocking error fail-safe."
+echo "Prepared PolyTrack v0.6.0 from the uploaded game bundle and its referenced assets."
 du -sh "$DEST"
 test -s "$DEST/index.html"
 test -s "$DEST/main.bundle.js"
 test -s "$DEST/simulation_worker.bundle.js"
+test -s "$DEST/polytrack_physics.wasm"
+test -s "$DEST/lib/draco/draco_decoder.wasm"
+test -s "$DEST/tracks/official/summer1.track"
+test -s "$DEST/tracks/official/winter5.track"
+test -s "$DEST/tracks/community/marvelous_marble.track"
+test -s "$DEST/models/car.glb"
+test -s "$DEST/images/icon.svg"
+printf '0.6.0\\n' > "$DEST/.polytrack-ios-version"
+grep -q '0.6.0' "$DEST/main.bundle.js"
 test -s "$DEST/error-failsafe.js"
 
 cat > "INSTALL-ON-IPHONE.txt" <<'TXT'
-PolyTrack iOS build is packaged as an unsigned IPA. GitHub Actions does not install it on your iPhone. Download the PolyTrack-Offline-v0.5.2-unsigned-IPA artifact from the latest successful run, then sideload/sign it using AltStore/SideStore or Sideloadly with a Mac/PC and your Apple ID. Tapping an unsigned IPA in the iOS Files app will not install it.
+PolyTrack iOS build is packaged as an unsigned IPA. GitHub Actions does not install it on your iPhone. Download the PolyTrack-Offline-v0.6.0-unsigned-IPA artifact from the latest successful run, then sideload/sign it using AltStore/SideStore or Sideloadly with a Mac/PC and your Apple ID. Tapping an unsigned IPA in the iOS Files app will not install it.
 TXT
