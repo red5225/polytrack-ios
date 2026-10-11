@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -26,23 +26,56 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Build unsigned iPhone app
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project PolyTrackIOS.xcodeproj \
+            -scheme PolyTrackIOS \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData-iPhone" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/DerivedData-iPhone/Build/Products/Release-iphoneos/PolyTrack.app"
+          test -d "$APP_PATH"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/PolyTrack.app"
+          (cd "$RUNNER_TEMP/ipa" && /usr/bin/zip -qry "$GITHUB_WORKSPACE/PolyTrack-unsigned.ipa" Payload)
+          test -s PolyTrack-unsigned.ipa
+
       - name: Build for iOS Simulator
         run: |
+          set -o pipefail
           xcodebuild \
             -project PolyTrackIOS.xcodeproj \
             -scheme PolyTrackIOS \
             -configuration Release \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData-Simulator" \
             CODE_SIGNING_ALLOWED=NO \
             build
 
       - name: Package simulator app
         run: |
-          APP_PATH="$RUNNER_TEMP/DerivedData/Build/Products/Release-iphonesimulator/PolyTrack.app"
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/DerivedData-Simulator/Build/Products/Release-iphonesimulator/PolyTrack.app"
           test -d "$APP_PATH"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-iOS-Simulator.zip
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: PolyTrack-unsigned-IPA
+          path: PolyTrack-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload simulator build
         uses: actions/upload-artifact@v4
