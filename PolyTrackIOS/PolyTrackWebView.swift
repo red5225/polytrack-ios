@@ -85,6 +85,45 @@ struct PolyTrackWebView: UIViewRepresentable {
             }
             try fileManager.copyItem(at: bundledGame, to: editableGame)
         }
+
+        // One-time cleanup for existing installs that still have the old in-game mods patch.
+        for legacyName in ["mods.js", "MODS-README.txt"] {
+            let legacyFile = editableGame.appendingPathComponent(legacyName)
+            if fileManager.fileExists(atPath: legacyFile.path) {
+                try? fileManager.removeItem(at: legacyFile)
+            }
+        }
+        for bundleName in ["main.bundle.js", "simulation_worker.bundle.js"] {
+            let editableFile = editableGame.appendingPathComponent(bundleName)
+            let patchedMarker = bundleName == "main.bundle.js" ? "PolyTrackModsState" : "__ptCheats"
+            if let contents = try? String(contentsOf: editableFile, encoding: .utf8),
+               contents.contains(patchedMarker) {
+                let cleanBundle = bundledGame.appendingPathComponent(bundleName)
+                if fileManager.fileExists(atPath: cleanBundle.path) {
+                    try fileManager.removeItem(at: editableFile)
+                    try fileManager.copyItem(at: cleanBundle, to: editableFile)
+                }
+            }
+        }
+        let errorScript = "error-failsafe.js"
+        let bundledError = bundledGame.appendingPathComponent(errorScript)
+        let editableError = editableGame.appendingPathComponent(errorScript)
+        if fileManager.fileExists(atPath: bundledError.path) {
+            if fileManager.fileExists(atPath: editableError.path) { try? fileManager.removeItem(at: editableError) }
+            try fileManager.copyItem(at: bundledError, to: editableError)
+        }
+        if var html = try? String(contentsOf: index, encoding: .utf8) {
+            html = html.replacingOccurrences(of: "<script defer src=\"./mods.js\"></script>", with: "")
+            let errorTag = "<script defer src=\"./error-failsafe.js\"></script>"
+            if !html.contains(errorTag), let headEnd = html.range(of: "</head>", options: .caseInsensitive) {
+                html.insert(contentsOf: "\n\(errorTag)\n", at: headEnd.lowerBound)
+                try html.write(to: index, atomically: true, encoding: .utf8)
+            } else if !html.contains(errorTag) {
+                throw GameFilesError.bundledFilesMissing
+            } else if !html.contains("./mods.js") {
+                try html.write(to: index, atomically: true, encoding: .utf8)
+            }
+        }
         return editableGame
     }
 

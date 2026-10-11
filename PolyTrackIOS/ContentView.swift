@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import UIKit
 
 private enum TracksideStyle {
     static let background = Color(red: 0.035, green: 0.047, blue: 0.063)
@@ -14,6 +15,7 @@ struct ContentView: View {
     @State private var reloadToken = UUID()
     @State private var resetToken = UUID()
     @State private var showInfo = false
+    @AppStorage("polytrack.keepScreenAwake") private var keepScreenAwake = true
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -102,6 +104,8 @@ struct ContentView: View {
                 .background(TracksideStyle.background.ignoresSafeArea())
             }
         }
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = keepScreenAwake }
+        .onChange(of: keepScreenAwake) { UIApplication.shared.isIdleTimerDisabled = $0 }
         .animation(.easeInOut(duration: 0.2), value: isLoading)
         .animation(.easeInOut(duration: 0.2), value: loadFailed)
         .preferredColorScheme(.dark).statusBarHidden(true)
@@ -117,77 +121,111 @@ struct ContentView: View {
 private struct InfoView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var confirmReset = false
+    @State private var selectedTab = 0
+    @AppStorage("polytrack.keepScreenAwake") private var keepScreenAwake = true
     let onResetGameData: () -> Void
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "flag.checkered").font(.system(size: 23, weight: .semibold))
-                                .foregroundStyle(TracksideStyle.accent)
-                            Text("POLYTRACK").font(.system(size: 22, weight: .black, design: .rounded))
-                                .tracking(1.8).foregroundStyle(.white)
+                    Picker("Settings section", selection: $selectedTab) {
+                        Text("Settings").tag(0)
+                        Text("About").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.bottom, 2)
+
+                    if selectedTab == 0 {
+                        VStack(alignment: .leading, spacing: 7) {
+                            Text("YOUR SESSION")
+                                .font(.system(size: 23, weight: .black, design: .rounded))
+                                .tracking(0.5).foregroundStyle(.white)
+                            Text("Tune the app for a longer, smoother play session.")
+                                .font(.system(size: 14)).foregroundStyle(TracksideStyle.muted)
                         }
-                        Text("OFFLINE EDITION  ·  BUILD 0.5.2")
-                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                            .tracking(1.3).foregroundStyle(TracksideStyle.muted)
-                        Text("An independent iOS wrapper for the archived PolyTrack browser game.")
-                            .font(.system(size: 14)).foregroundStyle(TracksideStyle.muted)
-                    }
-                    section("YOUR GAME FILES", symbol: "folder") {
-                        Text("Browse the editable copy in Files → On My iPhone → PolyTrack → Game.")
-                            .font(.system(size: 14)).foregroundStyle(.white.opacity(0.9))
-                        Text("Edits are preserved between launches. Back up the folder before changing code or assets.")
-                            .font(.system(size: 13)).foregroundStyle(TracksideStyle.muted)
-                    }
-                    section("SAVED DATA", symbol: "arrow.counterclockwise") {
-                        Text("Clear local progress and settings without deleting your editable game files.")
-                            .font(.system(size: 13)).foregroundStyle(TracksideStyle.muted)
-                        Button(role: .destructive) { confirmReset = true } label: {
-                            HStack {
-                                Image(systemName: "trash"); Text("Reset saved game data"); Spacer()
-                                Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold))
+                        section("DISPLAY", symbol: "sun.max.fill") {
+                            Toggle(isOn: $keepScreenAwake) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Keep screen awake")
+                                        .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                                    Text("Prevent auto-lock while you play.")
+                                        .font(.system(size: 12)).foregroundStyle(TracksideStyle.muted)
+                                }
                             }
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color(red: 1, green: 0.45, blue: 0.42))
-                            .padding(13).background(Color.red.opacity(0.09),
-                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .strokeBorder(Color.red.opacity(0.2), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                        .confirmationDialog("Reset saved game data?", isPresented: $confirmReset,
-                                            titleVisibility: .visible) {
-                            Button("Reset Game Data", role: .destructive) {
-                                onResetGameData(); dismiss()
+                            .tint(TracksideStyle.accent)
+                            .onChange(of: keepScreenAwake) { enabled in
+                                UIApplication.shared.isIdleTimerDisabled = enabled
                             }
-                            Button("Cancel", role: .cancel) {}
-                        } message: {
-                            Text("This clears saved progress and settings on this device. Your editable Game folder remains untouched.")
                         }
+                        section("GAME FILES", symbol: "folder") {
+                            Text("Your editable game copy is available in Files → On My iPhone → PolyTrack → Game.")
+                                .font(.system(size: 14)).foregroundStyle(.white.opacity(0.9))
+                            Text("Changes to files are preserved between launches. Back up the folder before editing game code or assets.")
+                                .font(.system(size: 13)).foregroundStyle(TracksideStyle.muted)
+                        }
+                        section("SAVED DATA", symbol: "arrow.counterclockwise") {
+                            Text("Clear local progress and browser storage without deleting your editable game files.")
+                                .font(.system(size: 13)).foregroundStyle(TracksideStyle.muted)
+                            Button(role: .destructive) { confirmReset = true } label: {
+                                HStack {
+                                    Image(systemName: "trash"); Text("Reset saved game data"); Spacer()
+                                    Image(systemName: "chevron.right").font(.system(size: 11, weight: .bold))
+                                }
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(Color(red: 1, green: 0.45, blue: 0.42))
+                                .padding(13).background(Color.red.opacity(0.09),
+                                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(Color.red.opacity(0.2), lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                            .confirmationDialog("Reset saved game data?", isPresented: $confirmReset,
+                                                titleVisibility: .visible) {
+                                Button("Reset Game Data", role: .destructive) {
+                                    onResetGameData(); dismiss()
+                                }
+                                Button("Cancel", role: .cancel) {}
+                            } message: {
+                                Text("This clears saved game progress and browser storage. Your app preferences and editable Game folder remain untouched.")
+                            }
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "flag.checkered").font(.system(size: 23, weight: .semibold))
+                                    .foregroundStyle(TracksideStyle.accent)
+                                Text("POLYTRACK").font(.system(size: 22, weight: .black, design: .rounded))
+                                    .tracking(1.8).foregroundStyle(.white)
+                            }
+                            Text("OFFLINE EDITION  ·  BUILD 0.5.2")
+                                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                .tracking(1.3).foregroundStyle(TracksideStyle.muted)
+                            Text("An independent iOS wrapper for the archived PolyTrack browser game.")
+                                .font(.system(size: 14)).foregroundStyle(TracksideStyle.muted)
+                        }
+                        section("CREDITS & LINKS", symbol: "info.circle") {
+                            Text("Original game by Kodub. This unofficial wrapper is not affiliated with or endorsed by the original creator or hosting platforms.")
+                                .font(.system(size: 13)).foregroundStyle(TracksideStyle.muted)
+                            externalLink("Official PolyTrack page", url: "https://kodub.itch.io/polytrack")
+                            externalLink("Kodub website", url: "https://www.kodub.com/")
+                            externalLink("Archived build source", url: "https://github.com/StaticQuasar931/polytrack-0.5.2")
+                        }
+                        Text("Online leaderboards, multiplayer, and other server-dependent features may be unavailable offline.")
+                            .font(.system(size: 12)).foregroundStyle(TracksideStyle.muted.opacity(0.85))
                     }
-                    section("CREDITS & LINKS", symbol: "info.circle") {
-                        Text("Original game by Kodub. This unofficial wrapper is not affiliated with or endorsed by the original creator or hosting platforms.")
-                            .font(.system(size: 13)).foregroundStyle(TracksideStyle.muted)
-                        externalLink("Official PolyTrack page", url: "https://kodub.itch.io/polytrack")
-                        externalLink("Kodub website", url: "https://www.kodub.com/")
-                        externalLink("Archived build source", url: "https://github.com/StaticQuasar931/polytrack-0.5.2")
-                    }
-                    Text("Online leaderboards, multiplayer, and other server-dependent features may be unavailable offline.")
-                        .font(.system(size: 12)).foregroundStyle(TracksideStyle.muted.opacity(0.85))
                 }
                 .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 28)
             }
             .background(TracksideStyle.background)
-            .navigationTitle("INFORMATION").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("SETTINGS").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }.fontWeight(.semibold).tint(TracksideStyle.accent)
                 }
             }
         }
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = keepScreenAwake }
     }
 
     private func section<Content: View>(_ title: String, symbol: String,
