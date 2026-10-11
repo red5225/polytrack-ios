@@ -1,14 +1,16 @@
 import Foundation
 import Network
 
-/// Serves the bundled game from loopback HTTP so WKWebView gets a normal origin
-/// and Web Workers can load their scripts. The listener is local to this device.
+/// Serves bundled game files from a stable loopback HTTP origin.
+/// A fixed port is important: browser storage is scoped to origin (including port),
+/// so using a random port on every launch made saved game data appear to vanish.
 final class PolyTrackLocalServer {
     private let rootURL: URL
     private let queue = DispatchQueue(label: "com.red5225.polytrack.local-server")
     private var listener: NWListener?
     private var didCompleteStart = false
     private let startLock = NSLock()
+    private let port = NWEndpoint.Port(rawValue: 8765)!
 
     init(rootURL: URL) {
         self.rootURL = rootURL.standardizedFileURL
@@ -16,7 +18,7 @@ final class PolyTrackLocalServer {
 
     func start(completion: @escaping (Result<URL, Error>) -> Void) {
         do {
-            let listener = try NWListener(using: .tcp, on: .any)
+            let listener = try NWListener(using: .tcp, on: port)
             self.listener = listener
             listener.newConnectionHandler = { [weak self] connection in
                 guard let self else {
@@ -29,9 +31,8 @@ final class PolyTrackLocalServer {
                 guard let self else { return }
                 switch state {
                 case .ready:
-                    guard let port = listener.port,
-                          let url = URL(string: "http://127.0.0.1:\(port)/index.html") else {
-                        self.completeStart(.failure(ServerError.noPort), completion: completion)
+                    guard let url = URL(string: "http://127.0.0.1:8765/index.html") else {
+                        self.completeStart(.failure(ServerError.badURL), completion: completion)
                         return
                     }
                     self.completeStart(.success(url), completion: completion)
@@ -53,7 +54,8 @@ final class PolyTrackLocalServer {
         listener = nil
     }
 
-    private func completeStart(_ result: Result<URL, Error>, completion: @escaping (Result<URL, Error>) -> Void) {
+    private func completeStart(_ result: Result<URL, Error>,
+                               completion: @escaping (Result<URL, Error>) -> Void) {
         startLock.lock()
         let shouldComplete = !didCompleteStart
         didCompleteStart = true
@@ -72,7 +74,8 @@ final class PolyTrackLocalServer {
             return
         }
         guard accumulated.count < 65_536 else {
-            send(connection, status: "400 Bad Request", contentType: "text/plain", body: Data("Bad request".utf8))
+            send(connection, status: "400 Bad Request", contentType: "text/plain",
+                 body: Data("Bad request".utf8))
             return
         }
         connection.receive(minimumIncompleteLength: 1, maximumLength: 16_384) { [weak self] data, _, isComplete, error in
@@ -82,7 +85,7 @@ final class PolyTrackLocalServer {
             }
             var next = accumulated
             if let data { next.append(data) }
-            if error != nil || isComplete && data == nil {
+            if error != nil || (isComplete && data == nil) {
                 connection.cancel()
             } else {
                 self.receiveHeaders(from: connection, accumulated: next)
@@ -93,29 +96,33 @@ final class PolyTrackLocalServer {
     private func respond(to connection: NWConnection, requestData: Data) {
         guard let headerText = String(data: requestData, encoding: .utf8),
               let requestLine = headerText.components(separatedBy: "\r\n").first else {
-            send(connection, status: "400 Bad Request", contentType: "text/plain", body: Data("Bad request".utf8))
+            send(connection, status: "400 Bad Request", contentType: "text/plain",
+                 body: Data("Bad request".utf8))
             return
         }
         let parts = requestLine.split(separator: " ")
         guard parts.count >= 2, parts[0] == "GET" || parts[0] == "HEAD" else {
-            send(connection, status: "405 Method Not Allowed", contentType: "text/plain", body: Data("Method not allowed".utf8))
+            send(connection, status: "405 Method Not Allowed", contentType: "text/plain",
+                 body: Data("Method not allowed".utf8))
             return
         }
 
         let rawTarget = String(parts[1]).components(separatedBy: "?").first ?? "/"
         guard let decodedPath = rawTarget.removingPercentEncoding else {
-            send(connection, status: "400 Bad Request", contentType: "text/plain", body: Data("Bad path".utf8))
+            send(connection, status: "400 Bad Request", contentType: "text/plain",
+                 body: Data("Bad path".utf8))
             return
         }
         let relativePath = decodedPath == "/" ? "index.html" : String(decodedPath.dropFirst())
         let fileURL = rootURL.appendingPathComponent(relativePath).standardizedFileURL
         guard fileURL.path.hasPrefix(rootURL.path + "/") || fileURL == rootURL,
               let data = try? Data(contentsOf: fileURL) else {
-            send(connection, status: "404 Not Found", contentType: "text/plain", body: Data("Asset not found".utf8))
+            send(connection, status: "404 Not Found", contentType: "text/plain",
+                 body: Data("Asset not found".utf8))
             return
         }
-        let mime = Self.mimeType(for: fileURL.pathExtension)
-        send(connection, status: "200 OK", contentType: mime, body: parts[0] == "HEAD" ? Data() : data)
+        send(connection, status: "200 OK", contentType: Self.mimeType(for: fileURL.pathExtension),
+             body: parts[0] == "HEAD" ? Data() : data)
     }
 
     private func send(_ connection: NWConnection, status: String, contentType: String, body: Data) {
@@ -150,6 +157,6 @@ final class PolyTrackLocalServer {
     }
 
     private enum ServerError: Error {
-        case noPort
+        case badURL
     }
 }
