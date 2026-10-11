@@ -47,11 +47,6 @@ w = replace_once(
                 Oh(this, Rh, "f").setGravity(e),
                 Ammo.destroy(e)
             }
-            setGravity(value) {
-                const gravity = new Ammo.btVector3(0, value, 0);
-                Oh(this, Rh, "f").setGravity(gravity);
-                Ammo.destroy(gravity);
-            }
             dispose() {
                 for (const {body: e} of Oh(this, Lh, "f"))""",
     "live gravity setter",
@@ -66,10 +61,7 @@ w = replace_once(
                 let __ptCheats = {};
                 const n = [];
                 function i(e) {
-                    if (e.data && e.data.__ptCheats) {
-                        __ptCheats = Object.assign({}, e.data.__ptCheats);
-                        if (t && typeof t.setGravity === "function") t.setGravity(__ptCheats.lowGravity ? -3 : -9.82);
-                    }
+                    if (e.data && e.data.__ptCheats) __ptCheats = Object.assign({}, e.data.__ptCheats);
                     switch (e.data.messageType) {""",
     "worker cheat state receiver",
 )
@@ -78,7 +70,6 @@ w = replace_once(
     """t = new G_(e.data.trackParts),
                             function(e) {""",
     """t = new G_(e.data.trackParts),
-                            t.setGravity(__ptCheats.lowGravity ? -3 : -9.82),
                             function(e) {""",
     "initial gravity application",
 )
@@ -150,7 +141,7 @@ cat > "$DEST/mods.js" <<'JS'
 (() => {
   if (window.__polyTrackModsLoaded) return;
   window.__polyTrackModsLoaded = true;
-  const cheats = { speedBoost:false, hyperBoost:false, lowGravity:false, airControl:false, precisionSteering:false, strongBrakes:false };
+  const cheats = { speedBoost:false, hyperBoost:false, airControl:false, precisionSteering:false, strongBrakes:false };
   window.PolyTrackModsState = cheats;
   const style = document.createElement("style");
   style.textContent = `
@@ -176,7 +167,6 @@ cat > "$DEST/mods.js" <<'JS'
   window.PolyTrackMods = Object.freeze({ version:"2.0", registerToggle, addStyle(cssText) { const s=document.createElement("style"); s.textContent=String(cssText); document.documentElement.appendChild(s); return s; } });
   toggleCheat("Speed boost · 2.5×","speedBoost");
   toggleCheat("Hyper boost · 4×","hyperBoost");
-  toggleCheat("Low gravity","lowGravity");
   toggleCheat("Air control","airControl");
   toggleCheat("Precision steering","precisionSteering");
   toggleCheat("Strong brakes","strongBrakes");
@@ -203,7 +193,7 @@ Useful files:
 - tracks/, models/, images/: game assets
 
 BUILT-IN PRACTICE MODS
-Tap MODS in-game to toggle Speed boost (2.5x), Hyper boost (4x), Low gravity, Air control, Precision steering, Strong brakes, Hide game HUD, and High-contrast HUD. Physics mods are local single-player changes. No-clip and unlock-all-tracks are not included because they require additional collision/progression changes.
+Tap MODS in-game to toggle Speed boost (2.5x), Hyper boost (4x), Air control, Precision steering, Strong brakes, Hide game HUD, and High-contrast HUD. Physics mods are local single-player changes. No-clip and unlock-all-tracks are not included because they require additional collision/progression changes.
 
 INSTALLING THE APP ON IPHONE
 A GitHub Actions build does not install the app automatically. The artifact is an unsigned IPA, and iOS will not install it by tapping it in Files. Download the IPA from the GitHub Actions run's Artifacts section, then install/sign it with a sideloading tool such as AltStore/SideStore or Sideloadly using a Mac/PC and your own Apple ID. This project does not include an Apple signing certificate or provisioning profile.
