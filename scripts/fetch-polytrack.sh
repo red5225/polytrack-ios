@@ -23,12 +23,27 @@ import sys
 path = Path(sys.argv[1])
 html = path.read_text(encoding="utf-8")
 
+# Remove the fork-added promo containers.
 for pattern in (
     r'<div\s+id="staticMenu"[^>]*>.*?</div\s*>',
     r'<div\s+id="staticSlideMenu"[^>]*>.*?</div\s*>',
     r'<div\s+class="seo-hidden"[^>]*>.*?</div\s*>',
 ):
     html = re.sub(pattern, "", html, count=1, flags=re.IGNORECASE | re.DOTALL)
+
+# IMPORTANT: the fork's "Leave warning" inline script animates the
+# "More games by Static" tile and writes a.href. Once its tile is removed,
+# that script dereferences null and crashes the loading page. Remove the
+# script itself as well as the tile.
+html, removed = re.subn(
+    r'<script\b[^>]*>\s*//\s*Leave warning.*?</script\s*>',
+    "",
+    html,
+    count=1,
+    flags=re.IGNORECASE | re.DOTALL,
+)
+if removed != 1:
+    raise SystemExit("Expected fork promo/leave-warning script was not found; refusing to build with the broken popup code")
 
 fullscreen_css = """
 /* Full-bleed layout for portrait and landscape iPhone screens. */
@@ -82,6 +97,8 @@ if "</style>" in html.lower():
 else:
     html = re.sub(r"</head>", "<style>" + fullscreen_css + "</style>\n</head>", html, count=1, flags=re.IGNORECASE)
 
+# Defensive cleanup if the promotion is inserted dynamically by another
+# fork script in a future upstream revision.
 promo_script = r"""
 <script>
 (function () {
@@ -124,7 +141,7 @@ if "polytrackModConfiguration" not in html:
 path.write_text(html, encoding="utf-8")
 PY
 
-echo "Prepared fullscreen PolyTrack v0.5.2 assets with fork promo removed."
+echo "Prepared fullscreen PolyTrack assets and removed the fork promo script that crashed loading."
 du -sh "$DEST"
 test -f "$DEST/index.html"
 test -f "$DEST/main.bundle.js"
