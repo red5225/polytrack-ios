@@ -63,7 +63,7 @@ cat > "$DEST/mods.js" <<'JS'
 /* PolyTrack iOS mod loader.
    This file is editable in Files > On My iPhone > PolyTrack > Game.
    Add personal single-player UI mods by calling:
-   PolyTrackMods.registerToggle("My mod", () => { /* enable */ }, () => { /* disable */ });
+   PolyTrackMods.registerToggle("My mod", enableFunction, disableFunction);
 */
 (() => {
   if (window.__polyTrackModsLoaded) return;
@@ -165,7 +165,7 @@ cat > "$DEST/mods.js" <<'JS'
 JS
 
 cat > "$DEST/MODS-README.txt" <<'TXT'
-POLYTRACK IOS — EDITABLE GAME FILES
+POLYTRACK IOS â EDITABLE GAME FILES
 
 Files location:
 On My iPhone > PolyTrack > Game
@@ -181,7 +181,7 @@ Useful files:
 MOD MENU
 Tap MODS in the game. The starter toggles change HUD presentation only. This is an extension point, not a claim that unsupported physics cheats already work.
 
-Custom toggle example — add near the bottom of mods.js, before the final closing wrapper if you want it to run in the same scope:
+Custom toggle example â add near the bottom of mods.js, before the final closing wrapper if you want it to run in the same scope:
 PolyTrackMods.registerToggle("My UI tweak",
   () => { document.body.style.filter = "saturate(1.3)"; },
   () => { document.body.style.filter = ""; }
