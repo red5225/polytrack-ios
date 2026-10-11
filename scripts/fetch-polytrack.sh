@@ -141,6 +141,41 @@ cat > "$DEST/mods.js" <<'JS'
 (() => {
   if (window.__polyTrackModsLoaded) return;
   window.__polyTrackModsLoaded = true;
+
+  // Global fail-safe: report uncaught game errors without replacing the game view.
+  let __ptToastTimer = 0;
+  let __ptLastError = "";
+  let __ptLastErrorAt = 0;
+  function __ptShowError(message) {
+    const now = Date.now();
+    const text = String(message || "Unknown game error").replace(/\s+/g, " ").slice(0, 180);
+    if (text === __ptLastError && now - __ptLastErrorAt < 1000) return;
+    __ptLastError = text; __ptLastErrorAt = now;
+    let box = document.getElementById("pt-error-toast");
+    if (!box) {
+      box = document.createElement("div"); box.id = "pt-error-toast";
+      Object.assign(box.style, {position:"fixed",top:"10px",right:"10px",zIndex:"2147483647",maxWidth:"min(300px, calc(100vw - 20px))",boxSizing:"border-box",padding:"8px 10px",border:"1px solid #d7dce2",borderRadius:"8px",background:"rgba(255,255,255,.97)",color:"#252a31",boxShadow:"0 3px 14px rgba(0,0,0,.2)",font:"12px/1.35 -apple-system,BlinkMacSystemFont,sans-serif",whiteSpace:"normal",overflowWrap:"anywhere",pointerEvents:"none"});
+      document.documentElement.appendChild(box);
+    }
+    box.textContent = "Game hiccup — continuing. " + text; box.style.display = "block";
+    if (__ptToastTimer) clearTimeout(__ptToastTimer);
+    __ptToastTimer = setTimeout(() => { if (box && box.isConnected) box.style.display = "none"; }, 5000);
+  }
+  window.addEventListener("error", event => {
+    const message = event && (event.message || (event.error && event.error.message)) || "A game action failed";
+    console.warn("[PolyTrack fail-safe]", message);
+    __ptShowError(message);
+    // Suppress the browser's default error overlay; the current failed action ends, game view remains.
+    event.preventDefault();
+  });
+  window.addEventListener("unhandledrejection", event => {
+    const reason = event && event.reason;
+    const message = reason && reason.message ? reason.message : String(reason || "An async game action failed");
+    console.warn("[PolyTrack fail-safe] Unhandled promise rejection:", message);
+    __ptShowError(message);
+    event.preventDefault();
+  });
+
   const cheats = { speedBoost:false, hyperBoost:false, airControl:false, precisionSteering:false, strongBrakes:false };
   window.PolyTrackModsState = cheats;
   const style = document.createElement("style");
@@ -160,7 +195,7 @@ cat > "$DEST/mods.js" <<'JS'
   const registerToggle = (name, enable, disable) => {
     const row = document.createElement("div"), label = document.createElement("span"), button = document.createElement("button");
     row.className = "pt-mod-row"; label.textContent = name; button.type = "button"; button.textContent = "OFF"; let active = false;
-    button.addEventListener("click", () => { try { if (active) { if (typeof disable === "function") disable(); active=false; button.textContent="OFF"; } else { if (typeof enable === "function") enable(); active=true; button.textContent="ON"; } } catch(error) { console.error("[PolyTrackMods]",name,error); button.textContent="ERR"; } });
+    button.addEventListener("click", () => { try { if (active) { if (typeof disable === "function") disable(); active=false; button.textContent="OFF"; } else { if (typeof enable === "function") enable(); active=true; button.textContent="ON"; } } catch(error) { console.error("[PolyTrackMods]",name,error); button.textContent="ERR"; __ptShowError(name + ": " + (error && error.message || error)); } });
     row.append(label,button); panel.appendChild(row);
   };
   const toggleCheat = (label,key) => registerToggle(label,()=>{ cheats[key]=true; },()=>{ cheats[key]=false; });
