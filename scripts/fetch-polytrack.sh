@@ -90,7 +90,7 @@ for script in scripts:
     content = script.read_text(encoding="utf-8", errors="ignore")
     assets.update(path_re.findall(content))
     assets.update("tracks/official/" + name for name in official_re.findall(content))
-out.write_text("\\n".join(sorted(assets)) + "\\n", encoding="utf-8")
+out.write_text("\n".join(sorted(assets)) + "\n", encoding="utf-8")
 print("Found", len(assets), "static assets across", len(scripts), "JavaScript files.")
 PY
 while IFS= read -r asset; do
@@ -155,7 +155,7 @@ test -s "$DEST/tracks/official/winter5.track"
 test -s "$DEST/tracks/community/marvelous_marble.track"
 test -s "$DEST/models/car.glb"
 test -s "$DEST/images/icon.svg"
-printf '0.6.0\\n' > "$DEST/.polytrack-ios-version"
+printf '0.6.0\n' > "$DEST/.polytrack-ios-version"
 grep -q '0.6.0' "$DEST/main.bundle.js"
 test -s "$DEST/error-failsafe.js"
 
