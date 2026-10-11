@@ -8,7 +8,12 @@ targets:
     type: application
     platform: iOS
     sources:
-      - PolyTrackIOS
+      - path: PolyTrackIOS
+        excludes:
+          - Game/**
+    resources:
+      - path: PolyTrackIOS/Game
+        type: folder
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.red5225.polytrackios
@@ -16,12 +21,12 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: PolyTrack
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.games
         INFOPLIST_KEY_UIRequiresFullScreen: YES
+        INFOPLIST_KEY_UIStatusBarHidden: YES
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
-        INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads: NO
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
       configs:
         Debug:

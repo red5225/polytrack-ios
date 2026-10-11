@@ -1,38 +1,44 @@
-# PolyTrack iOS
+# PolyTrack iOS Offline
 
-An unofficial iOS shell for playing PolyTrack on iPhone. This project currently loads the official PolyTrack page directly in `WKWebView`; it does **not** redistribute or bundle PolyTrack game files.
+An unofficial, non-commercial iOS app shell that bundles an archived, self-contained PolyTrack browser build into the app bundle. It loads local files instead of the live game website.
 
-- Official game: https://kodub.itch.io/polytrack
-- Official creator site: https://www.kodub.com/
-- Official PolyTrack terms: https://www.kodub.com/terms/polytrack
-- Official CrazyGames page: https://www.crazygames.com/game/polytrack
+## What is included
 
-## Status
+- Bundled PolyTrack **v0.5.0** browser files, including game scripts, models, tracks, images, audio and fonts available in the archive.
+- Full-screen gameplay with the iOS status bar hidden.
+- Local file loading, so core gameplay and included tracks can work without an internet connection.
+- A credits/about screen with required attribution and links.
 
-**Prototype.** GitHub Actions builds an **unsigned device IPA** and an iOS Simulator build. The IPA is packaged for import into a sideloading/signing tool; it is **not signed and cannot be installed directly as-is**. Use a trusted sideloading tool such as AltStore or Sideloadly to sign it with your own Apple ID, following that tool's current instructions. Signing typically requires refreshing the app periodically with a free Apple ID; paid Apple Developer accounts have different signing options. Availability and limits may vary by tool and iOS version.
+**Version note:** this intentionally bundles archived v0.5.0, not the newer official release. Features that depend on Kodub's servers—including online leaderboards, multiplayer and community services—may not work offline. This has not been verified as a fully offline replacement for every feature.
 
-## Get the IPA
+## Build and get the IPA
 
-1. Open the repository's **Actions** tab: https://github.com/red5225/polytrack-ios/actions/workflows/ios-build.yml
+GitHub Actions downloads the archived game files during the build, injects the required mod configuration, verifies that the main game files are present, and packages the unsigned iOS app.
+
+1. Open the [Actions workflow](https://github.com/red5225/polytrack-ios/actions/workflows/ios-build.yml).
 2. Open the latest successful **Build iOS app** run.
-3. In **Artifacts**, download `PolyTrack-unsigned-IPA`.
-4. Extract the artifact ZIP to get `PolyTrack-unsigned.ipa`.
-5. Import the IPA into your chosen sideloading tool and let it sign/install it on your iPhone.
-
-If the build is red, open the failed run and inspect the first failed step before trying to install anything.
+3. Under **Artifacts**, download **PolyTrack-Offline-v0.5.0-unsigned-IPA**.
+4. Extract the artifact ZIP to get the IPA file.
+5. Import the IPA into a trusted iOS sideloading/signing tool and sign it with your own Apple ID as supported by that tool. The artifact is unsigned and cannot be installed directly as-is.
 
 ## Build locally
 
-1. Install Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
-2. From the repository root, run `xcodegen generate`.
-3. Open `PolyTrackIOS.xcodeproj` in Xcode.
-4. Choose an iPhone simulator and run the `PolyTrackIOS` scheme.
+Requirements: macOS, Xcode, XcodeGen and Git.
 
-## Important licensing note
+```sh
+bash scripts/fetch-polytrack.sh
+xcodegen generate
+xcodebuild -project PolyTrackIOS.xcodeproj -scheme PolyTrackIOS -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+```
 
-This app loads the official page and does not copy game assets or source files into this repository. PolyTrack is created by Kodub; this project is unofficial and not affiliated with or endorsed by Kodub, CrazyGames, Poki, or itch.io. See the official terms before modifying or redistributing the game. If the project later bundles/reuploads game files, that work must comply with the current terms, including non-commercial use, attribution, an obvious unofficial notice, and preserving outbound links.
+## Attribution and terms
 
-## Artifacts
+PolyTrack was created by **Kodub**. This is an unofficial, non-commercial port and is not affiliated with or endorsed by Kodub, CrazyGames, Poki or itch.io. The app preserves game navigation links and includes a clickable link to the official CrazyGames game page.
 
-- `PolyTrack-unsigned-IPA`: device build, unsigned; import into a signing/sideloading tool.
-- `PolyTrack-iOS-Simulator`: simulator-only app, not installable on a physical iPhone.
+- Official game: https://kodub.itch.io/polytrack
+- Official game page link required by Kodub's terms: https://www.crazygames.com/game/polytrack
+- Creator website: https://www.kodub.com/
+- Terms of Service: https://www.kodub.com/terms/polytrack
+- Archive used for the v0.5.0 static files: https://github.com/Hexcein-moonsters/polytrack
+
+This project does not claim ownership of PolyTrack or its game assets. The bundled archive is downloaded at build time, not committed to this repository. Review the original creator's current terms before redistributing builds; the terms require non-commercial use, attribution, an obvious unofficial notice, and preservation of outbound links.
