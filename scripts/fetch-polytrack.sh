@@ -15,8 +15,7 @@ rm -rf "$DEST"
 mkdir -p "$DEST"
 cp -R "$TMP_DIR/archive/." "$DEST/"
 
-# Remove promotional overlays and scripts added by this third-party archive.
-# Keep the game itself intact; original-game attribution remains in the native About sheet.
+# Remove only the third-party fork's promotional overlays and its controlling script.
 python3 - "$DEST/index.html" <<'PY'
 from pathlib import Path
 import re
@@ -25,20 +24,20 @@ import sys
 path = Path(sys.argv[1])
 html = path.read_text(encoding="utf-8")
 
-# Fork-added fixed menu, rotating social/feedback tile, and hidden SEO text.
-for pattern in (
-    r'<div\s+id="staticMenu"\b[^>]*>.*?</div>',
-    r'<div\s+id="staticSlideMenu"\b[^>]*>.*?</div>',
-    r'<div\s+class="seo-hidden"\b[^>]*>.*?</div>',
-):
+patterns = [
+    r'<div\s+id="staticMenu"[^>]*>.*?</div\s*>',
+    r'<div\s+id="staticSlideMenu"[^>]*>.*?</div\s*>',
+    r'<div\s+class="seo-hidden"[^>]*>.*?</div\s*>',
+]
+for pattern in patterns:
     html, count = re.subn(pattern, "", html, count=1, flags=re.IGNORECASE | re.DOTALL)
     if count != 1:
         raise SystemExit(f"Expected fork-added markup not found for pattern: {pattern}")
 
-# This inline script controls the fork's menus, rotating widget, keyboard toggle,
-# and leave-page warning. Do not touch the official game bundles.
+# This script is identifiable by its first comment and contains the fork's
+# promotional rotator, keyboard toggle, and beforeunload warning.
 html, count = re.subn(
-    r'<script>\s*// Leave warning.*?</script>',
+    r'<script\b[^>]*>\s*//\s*Leave warning.*?</script\s*>',
     "",
     html,
     count=1,
@@ -47,6 +46,7 @@ html, count = re.subn(
 if count != 1:
     raise SystemExit("Expected fork-added popup/rotator script not found")
 
+# Ensure the game canvas uses the full available iPhone viewport.
 fullscreen_css = """
 /* iPhone fullscreen layout: remove browser-style gutters around the game. */
 html, body {
@@ -89,7 +89,7 @@ html = re.sub(r"</style>", lambda m: fullscreen_css + "\n" + m.group(0), html, c
 path.write_text(html, encoding="utf-8")
 PY
 
-# Keep the fork's expected configuration but do not modify the official game bundle.
+# Keep the fork's expected configuration, without changing the official game bundles.
 python3 - "$DEST/index.html" <<'PY'
 from pathlib import Path
 import re
@@ -106,7 +106,7 @@ if "polytrackModConfiguration" not in html:
 path.write_text(html, encoding="utf-8")
 PY
 
-echo "Prepared PolyTrack v0.5.2 fullscreen assets without fork-added promo popups:"
+echo "Prepared PolyTrack v0.5.2 fullscreen assets without fork-added promotional popups:"
 du -sh "$DEST"
 test -f "$DEST/index.html"
 test -f "$DEST/main.bundle.js"
