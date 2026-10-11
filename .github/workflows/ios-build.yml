@@ -23,7 +23,7 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Download and prepare bundled PolyTrack v0.5.0
+      - name: Download and prepare bundled PolyTrack v0.5.2
         run: bash scripts/fetch-polytrack.sh
 
       - name: Verify bundled game files
@@ -69,7 +69,7 @@ jobs:
           du -sh "$APP_PATH/Game"
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           cp -R "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/PolyTrack.app"
-          IPA_PATH="$GITHUB_WORKSPACE/PolyTrack-Offline-v0.5.0-unsigned.ipa"
+          IPA_PATH="$GITHUB_WORKSPACE/PolyTrack-Offline-v0.5.2-unsigned.ipa"
           (cd "$RUNNER_TEMP/ipa" && /usr/bin/zip -qry "$IPA_PATH" Payload)
           test -s "$IPA_PATH"
           python3 - "$IPA_PATH" <<'PY'
@@ -116,8 +116,8 @@ jobs:
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: PolyTrack-Offline-v0.5.0-unsigned-IPA
-          path: PolyTrack-Offline-v0.5.0-unsigned.ipa
+          name: PolyTrack-Offline-v0.5.2-unsigned-IPA
+          path: PolyTrack-Offline-v0.5.2-unsigned.ipa
           if-no-files-found: error
           retention-days: 14
 

@@ -76,7 +76,7 @@ private struct CreditsView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("PolyTrack").font(.largeTitle.bold())
                     Text("Original game by Kodub").font(.title3.weight(.semibold))
-                    Text("This is an unofficial, non-commercial iOS wrapper bundling an archived PolyTrack v0.5.0 browser build. It is not affiliated with or endorsed by Kodub, CrazyGames, Poki, or itch.io.")
+                    Text("This is an unofficial, non-commercial iOS wrapper bundling an archived PolyTrack v0.5.2 browser build. It is not affiliated with or endorsed by Kodub, CrazyGames, Poki, or itch.io.")
                         .foregroundStyle(.secondary)
                     Text("Offline play").font(.headline)
                     Text("Local game assets and included tracks are bundled with this app. Online leaderboards, multiplayer, community services, and other server-dependent features may not work offline.")
@@ -84,7 +84,7 @@ private struct CreditsView: View {
                     Link("Play the official PolyTrack page", destination: URL(string: "https://www.crazygames.com/game/polytrack")!)
                     Link("Kodub’s official website", destination: URL(string: "https://www.kodub.com/")!)
                     Link("Official itch.io page", destination: URL(string: "https://kodub.itch.io/polytrack")!)
-                    Link("Archived build source and attribution", destination: URL(string: "https://github.com/Hexcein-moonsters/polytrack")!)
+                    Link("Archived build source and attribution", destination: URL(string: "https://github.com/StaticQuasar931/polytrack-0.5.2")!)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(24)
