@@ -23,8 +23,6 @@ import sys
 path = Path(sys.argv[1])
 html = path.read_text(encoding="utf-8")
 
-# Remove the known fork-added promotional blocks, if present. These are
-# independent from the game's own menus and tracks.
 for pattern in (
     r'<div\s+id="staticMenu"[^>]*>.*?</div\s*>',
     r'<div\s+id="staticSlideMenu"[^>]*>.*?</div\s*>',
@@ -66,6 +64,8 @@ html, body {
 #screen { display: block !important; }
 #screen canvas, canvas {
   display: block !important;
+  width: 100% !important;
+  height: 100% !important;
   max-width: none !important;
   max-height: none !important;
 }
@@ -82,8 +82,6 @@ if "</style>" in html.lower():
 else:
     html = re.sub(r"</head>", "<style>" + fullscreen_css + "</style>\n</head>", html, count=1, flags=re.IGNORECASE)
 
-# The fork adds its "More games by Static" promotion dynamically in some
-# menu/loading states. Remove only elements containing that exact promo text.
 promo_script = r"""
 <script>
 (function () {
