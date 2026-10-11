@@ -1,0 +1,30 @@
+name: PolyTrackIOS
+options:
+  bundleIdPrefix: com.red5225
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  PolyTrackIOS:
+    type: application
+    platform: iOS
+    sources:
+      - PolyTrackIOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.red5225.polytrackios
+        PRODUCT_NAME: PolyTrack
+        INFOPLIST_KEY_CFBundleDisplayName: PolyTrack
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.games
+        INFOPLIST_KEY_UIRequiresFullScreen: YES
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        INFOPLIST_KEY_NSAppTransportSecurity_NSAllowsArbitraryLoads: NO
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
