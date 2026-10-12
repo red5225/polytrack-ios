@@ -73,7 +73,7 @@ PY
   mv "$tmp" "$target"
 }
 
-for asset in simulation_worker.bundle.js polytrack_physics.wasm forced_square.json lib/draco/draco_decoder.wasm lib/draco/draco_wasm_wrapper.js 124.bundle.js 142.bundle.js 168.bundle.js 280.bundle.js 57.bundle.js 789.bundle.js 982.bundle.js; do
+for asset in simulation_worker.bundle.js lib/polytrack_physics.js polytrack_physics.wasm forced_square.json lib/draco/draco_decoder.wasm lib/draco/draco_wasm_wrapper.js 124.bundle.js 142.bundle.js 168.bundle.js 280.bundle.js 57.bundle.js 789.bundle.js 982.bundle.js; do
   download_asset "$asset"
 done
 
@@ -149,6 +149,7 @@ test -s "$DEST/index.html"
 test -s "$DEST/main.bundle.js"
 test -s "$DEST/simulation_worker.bundle.js"
 test -s "$DEST/polytrack_physics.wasm"
+test -s "$DEST/lib/polytrack_physics.js"
 test -s "$DEST/lib/draco/draco_decoder.wasm"
 test -s "$DEST/lib/draco/draco_wasm_wrapper.js"
 test -s "$DEST/tracks/official/summer1.track"
