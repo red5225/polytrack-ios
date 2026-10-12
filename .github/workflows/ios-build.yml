@@ -33,6 +33,7 @@ jobs:
           test -s PolyTrackIOS/Game/simulation_worker.bundle.js
           test -s PolyTrackIOS/Game/polytrack_physics.wasm
           test -s PolyTrackIOS/Game/lib/draco/draco_decoder.wasm
+          test -s PolyTrackIOS/Game/lib/draco/draco_wasm_wrapper.js
           test -s PolyTrackIOS/Game/tracks/official/summer1.track
           test -s PolyTrackIOS/Game/tracks/official/winter5.track
           test -s PolyTrackIOS/Game/tracks/community/marvelous_marble.track
