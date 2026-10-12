@@ -144,33 +144,42 @@ jobs:
           ditto PolyTrackIOS/Game "$APP_PATH/Contents/Resources/Game"
           GAME="$APP_PATH/Contents/Resources/Game"
           FIRST_GAME="$APP_PATH/Contents/Resources/Game-FirstBuild"
-          ditto "$GAME" "$FIRST_GAME"
-          python3 - "$FIRST_GAME/index.html" "$FIRST_GAME/error-failsafe.js" <<'PY'
+          OLD_SOURCE="$RUNNER_TEMP/polytrack-v052"
+          git clone --quiet --depth 1 https://github.com/htmlunblockedgames/polytrack-0.5.2-clean.git "$OLD_SOURCE"
+          git -C "$OLD_SOURCE" fetch --quiet --depth 1 origin 2b6913f93aaccee4ab8f96a05755d98050db5463
+          git -C "$OLD_SOURCE" checkout --quiet 2b6913f93aaccee4ab8f96a05755d98050db5463
+          node "$OLD_SOURCE/scripts/run-tests.js"
+          mkdir -p "$FIRST_GAME"
+          rsync -a --exclude='.git/' --exclude='README.md' --exclude='API.md' --exclude='package.json' --exclude='scripts/' --exclude='.gitignore' "$OLD_SOURCE/" "$FIRST_GAME/"
+          python3 - "$FIRST_GAME/index.html" <<'PY'
           from pathlib import Path
-          import sys
-          html_path, script_path = map(Path, sys.argv[1:])
-          html = html_path.read_text(encoding="utf-8")
-          html = html.replace('<script defer src="./error-failsafe.js"></script>', '')
-          html = html.replace('<script defer src="./error-failsafe.js"></script>\n', '')
-          html_path.write_text(html, encoding="utf-8")
-          script_path.unlink(missing_ok=True)
-          if "error-failsafe.js" in html:
-              raise SystemExit("Popup fail-safe script still referenced in first build")
-          print("Prepared first build without the extra error-popup script")
+          import re, sys
+          p = Path(sys.argv[1])
+          html = p.read_text(encoding="utf-8")
+          html = re.sub(r'\s*<!-- Google tag \(gtag\.js\) -->.*?<script defer=\"defer\" src=\"\./error_screen\.bundle\.js\"></script>', lambda m: m.group(0).split('<script defer=')[0], html, flags=re.S)
+          html = re.sub(r'\s*<script async src=\"https://www\.googletagmanager\.com/gtag/js\?id=G-TE23LLQE9F\"></script>', '', html)
+          html = re.sub(r'\s*<script>\s*window\.dataLayer = window\.dataLayer \|\| \[\];.*?gtag\(\'config\', \'G-TE23LLQE9F\'\);\s*</script>', '', html, flags=re.S)
+          p.write_text(html, encoding="utf-8")
+          if 'googletagmanager' in html or 'G-TE23LLQE9F' in html:
+              raise SystemExit("Analytics snippet still present in PolyTrack 0.5.2 HTML")
           PY
           test -s "$FIRST_GAME/index.html"
-          test ! -e "$FIRST_GAME/error-failsafe.js"
+          test -s "$FIRST_GAME/main.bundle.js"
+          test -s "$FIRST_GAME/simulation_worker.bundle.js"
+          test -s "$FIRST_GAME/lib/ammo.wasm.wasm"
+          test -s "$FIRST_GAME/lib/ammo.wasm.js"
+          test -s "$FIRST_GAME/lib/draco/draco_decoder.wasm"
+          test -s "$FIRST_GAME/lib/draco/draco_wasm_wrapper.js"
+          grep -q '"rE":"0.5.2"' "$FIRST_GAME/main.bundle.js"
           test -s "$GAME/index.html"
           test -s "$GAME/main.bundle.js"
           test -s "$GAME/simulation_worker.bundle.js"
           test -s "$GAME/polytrack_physics.wasm"
           test -s "$GAME/lib/draco/draco_decoder.wasm"
           test -s "$GAME/lib/draco/draco_wasm_wrapper.js"
-          test -s "$FIRST_GAME/main.bundle.js"
-          test -s "$FIRST_GAME/simulation_worker.bundle.js"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-macOS-Monterey-Intel-v0.6.0.zip
-          test -s PolyTrack-macOS-Monterey-Intel-v0.6.0.zip
-          python3 - PolyTrack-macOS-Monterey-Intel-v0.6.0.zip <<'PY'
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip
+          test -s PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip
+          python3 - PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip <<'PY'
           import sys, zipfile
           archive = sys.argv[1]
           expected = (
@@ -180,6 +189,11 @@ jobs:
               "Contents/Resources/Game/polytrack_physics.wasm",
               "Contents/Resources/Game/lib/draco/draco_decoder.wasm",
               "Contents/Resources/Game/lib/draco/draco_wasm_wrapper.js",
+              "Contents/Resources/Game-FirstBuild/index.html",
+              "Contents/Resources/Game-FirstBuild/main.bundle.js",
+              "Contents/Resources/Game-FirstBuild/simulation_worker.bundle.js",
+              "Contents/Resources/Game-FirstBuild/lib/ammo.wasm.wasm",
+              "Contents/Resources/Game-FirstBuild/lib/draco/draco_decoder.wasm",
           )
           with zipfile.ZipFile(archive) as z:
               bad = z.testzip()
@@ -192,13 +206,13 @@ jobs:
                       raise SystemExit(f"Missing Mac artifact asset: {suffix}")
                   print("Verified:", matches[0])
           PY
-          ls -lh PolyTrack-macOS-Monterey-Intel-v0.6.0.zip
+          ls -lh PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip
 
       - name: Upload native macOS app
         uses: actions/upload-artifact@v4
         with:
-          name: PolyTrack-macOS-Monterey-Intel-v0.6.0
-          path: PolyTrack-macOS-Monterey-Intel-v0.6.0.zip
+          name: PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0
+          path: PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip
           if-no-files-found: error
           retention-days: 14
 
