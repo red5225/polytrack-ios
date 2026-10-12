@@ -12,8 +12,11 @@ targets:
       - path: PolyTrackIOS
         excludes:
           - Game/**
+          - Game-0.5.2/**
     resources:
       - path: PolyTrackIOS/Game
+        type: folder
+      - path: PolyTrackIOS/Game-0.5.2
         type: folder
     settings:
       base:
@@ -44,6 +47,8 @@ targets:
       - path: PolyTrackIOS/PolyTrackLocalServer.swift
     resources:
       - path: PolyTrackIOS/Game
+        type: folder
+      - path: PolyTrackIOS/Game-0.5.2
         type: folder
     settings:
       base:
