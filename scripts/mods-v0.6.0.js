@@ -2,7 +2,7 @@
 (() => {
   if (window.__polyTrackModsLoaded) return;
   window.__polyTrackModsLoaded = true;
-  const cheats = { autoThrottle: false, reverseLock: false };
+  const cheats = { autoThrottle: false, reverseLock: false, autoBrake: false, holdLeft: false, holdRight: false };
   window.PolyTrackModsState = cheats;
   const style = document.createElement('style');
   style.textContent = `
@@ -14,7 +14,7 @@
   document.documentElement.appendChild(style);
   const open = document.createElement('button'); open.id='pt-mods-button'; open.type='button'; open.textContent='MODS'; open.setAttribute('aria-label','Open PolyTrack gameplay mods');
   const panel = document.createElement('section'); panel.id='pt-mods-panel'; panel.hidden=true;
-  panel.innerHTML='<h3>PolyTrack Mods · 0.6.0</h3><p>Practice-only toggles. Auto throttle changes simulation input; reverse lock ignores reverse input.</p>';
+  panel.innerHTML='<h3>PolyTrack Mods · 0.6.0</h3><p>Practice-only toggles. Auto throttle, reverse lock, auto brake, and held steering change simulation input. Avoid enabling both steering holds at once.</p>';
   open.addEventListener('click',()=>{panel.hidden=!panel.hidden;});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')panel.hidden=true;});
   document.body.append(open,panel);
@@ -26,6 +26,9 @@
   }
   toggle('Auto throttle',()=>{cheats.autoThrottle=true;},()=>{cheats.autoThrottle=false;});
   toggle('Reverse lock',()=>{cheats.reverseLock=true;},()=>{cheats.reverseLock=false;});
+  toggle('Auto brake',()=>{cheats.autoBrake=true;},()=>{cheats.autoBrake=false;});
+  toggle('Hold left steering',()=>{cheats.holdLeft=true;},()=>{cheats.holdLeft=false;});
+  toggle('Hold right steering',()=>{cheats.holdRight=true;},()=>{cheats.holdRight=false;});
   toggle('Hide game HUD',()=>{const e=document.getElementById('ui');if(e)e.style.visibility='hidden';},()=>{const e=document.getElementById('ui');if(e)e.style.visibility='';});
   toggle('High-contrast HUD',()=>{const e=document.getElementById('ui');if(e)e.style.filter='contrast(1.4) brightness(1.15)';},()=>{const e=document.getElementById('ui');if(e)e.style.filter='';});
   toggle('Larger touch controls',()=>{let s=document.getElementById('pt-touch-style');if(!s){s=document.createElement('style');s.id='pt-touch-style';document.head.appendChild(s);}s.textContent='#ui button,#ui [role=button]{transform:scale(1.15);transform-origin:center;}';},()=>{const s=document.getElementById('pt-touch-style');if(s)s.remove();});

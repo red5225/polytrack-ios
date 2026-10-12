@@ -141,7 +141,9 @@ worker = once(
             );""",
     """function a(e, i) {
             const ptUp = __ptCheats.autoThrottle ? true : i.up;
-            const ptDown = __ptCheats.reverseLock ? false : i.down;
+            const ptDown = __ptCheats.reverseLock ? false : (__ptCheats.autoBrake ? true : i.down);
+            const ptRight = __ptCheats.holdRight ? true : i.right;
+            const ptLeft = __ptCheats.holdLeft ? true : i.left;
             t.ccall(
               "updateCarModel",
               "void",
@@ -154,11 +156,11 @@ worker = once(
                 "boolean",
                 "number",
               ],
-              [e.id, ptUp, i.right, ptDown, i.left, i.reset, n],
+              [e.id, ptUp, ptRight, ptDown, ptLeft, i.reset, n],
             );""",
     "0.6 gameplay control hook",
 )
-if '__ptCheats.autoThrottle' not in worker or '__ptCheats.reverseLock' not in worker:
+if any(name not in worker for name in ('__ptCheats.autoThrottle', '__ptCheats.reverseLock', '__ptCheats.autoBrake', '__ptCheats.holdLeft', '__ptCheats.holdRight')):
     raise SystemExit("0.6 gameplay cheat hooks missing after patch")
 main_path.write_text(main, encoding="utf-8")
 worker_path.write_text(worker, encoding="utf-8")
