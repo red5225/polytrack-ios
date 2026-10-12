@@ -119,7 +119,6 @@ jobs:
           test -d "$APP_PATH"
           mkdir -p "$APP_PATH/Game"
           ditto PolyTrackIOS/Game "$APP_PATH/Game"
-          ditto -c -k          ditto PolyTrackIOS/Game "$APP_PATH/Game"
           test -s "$APP_PATH/Game/lib/polytrack_physics.js"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-iOS-Simulator-v0.6.0.zip
 
