@@ -16,7 +16,7 @@ struct ContentView: View {
     @State private var resetToken = UUID()
     @State private var showInfo = false
     @AppStorage("polytrack.keepScreenAwake") private var keepScreenAwake = true
-    @AppStorage("polytrack.gameVersion") private var gameVersion = "0.6.0"
+    @AppStorage("polytrack.gameVersion") private var gameVersion = "normal"
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -105,7 +105,10 @@ struct ContentView: View {
                 .background(TracksideStyle.background.ignoresSafeArea())
             }
         }
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = keepScreenAwake }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = keepScreenAwake
+            if gameVersion == "0.6.0" || gameVersion == "0.5.2" { gameVersion = "custom" }
+        }
         .onChange(of: keepScreenAwake) { UIApplication.shared.isIdleTimerDisabled = $0 }
         .onChange(of: gameVersion) { _ in reloadToken = UUID(); isLoading = true; loadFailed = false }
         .animation(.easeInOut(duration: 0.2), value: isLoading)
@@ -125,7 +128,7 @@ private struct InfoView: View {
     @State private var confirmReset = false
     @State private var selectedTab = 0
     @AppStorage("polytrack.keepScreenAwake") private var keepScreenAwake = true
-    @AppStorage("polytrack.gameVersion") private var gameVersion = "0.6.0"
+    @AppStorage("polytrack.gameVersion") private var gameVersion = "normal"
     let onResetGameData: () -> Void
 
     var body: some View {
@@ -149,12 +152,13 @@ private struct InfoView: View {
                         }
                         section("GAME VERSION", symbol: "gamecontroller.fill") {
                             Picker("PolyTrack version", selection: $gameVersion) {
-                                Text("0.6.0 · Newer physics").tag("0.6.0")
-                                Text("0.5.2 · Classic + mods").tag("0.5.2")
+                                Text("Normal · No mods").tag("normal")
+                                Text("Custom · Gameplay mods").tag("custom")
+                                Text("PolyMod · Mod loader").tag("polymod")
                             }
                             .pickerStyle(.menu)
                             .tint(TracksideStyle.accent)
-                            Text(gameVersion == "0.5.2" ? "Classic version with the restored single-player physics mod menu." : "Newer game version. UI mods are available; physics mod compatibility is being developed separately.")
+                            Text(gameVersion == "polymod" ? "PolyModLoader edition with its own mod-loader interface. Mod loading may require an internet connection." : gameVersion == "custom" ? "Custom PolyTrack build with the built-in gameplay and HUD mod menu." : "Clean PolyTrack 0.6.0 with the custom mod menu and gameplay patches removed.")
                                 .font(.system(size: 12)).foregroundStyle(TracksideStyle.muted)
                         }
                         section("DISPLAY", symbol: "sun.max.fill") {
@@ -211,7 +215,7 @@ private struct InfoView: View {
                                 Text("POLYTRACK").font(.system(size: 22, weight: .black, design: .rounded))
                                     .tracking(1.8).foregroundStyle(.white)
                             }
-                            Text("OFFLINE EDITION  ·  BUILD 0.5.2")
+                            Text("OFFLINE EDITION  ·  THREE BUILDS")
                                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
                                 .tracking(1.3).foregroundStyle(TracksideStyle.muted)
                             Text("An independent iOS wrapper for the archived PolyTrack browser game.")

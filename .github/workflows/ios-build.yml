@@ -29,6 +29,9 @@ jobs:
       - name: Prepare PolyTrack 0.5.2 with physics mods
         run: bash scripts/fetch-polytrack-0.5.2.sh
 
+      - name: Prepare standalone PolyModLoader build
+        run: bash scripts/fetch-polymod.sh
+
       - name: Verify bundled game files
         run: |
           test -s PolyTrackIOS/Game/index.html
@@ -43,6 +46,16 @@ jobs:
           test -s PolyTrackIOS/Game/tracks/community/marvelous_marble.track
           test -s PolyTrackIOS/Game/models/car.glb
           test -s PolyTrackIOS/Game/.polytrack-ios-version
+          test -s PolyTrackIOS/Game-Normal/index.html
+          test -s PolyTrackIOS/Game-Normal/main.bundle.js
+          test -s PolyTrackIOS/Game-Normal/simulation_worker.bundle.js
+          test -s PolyTrackIOS/Game-Normal/.polytrack-ios-version
+          test -s PolyTrackIOS/Game-PolyMod/index.html
+          test -s PolyTrackIOS/Game-PolyMod/main.bundle.js
+          test -s PolyTrackIOS/Game-PolyMod/simulation_worker.bundle.js
+          test -s PolyTrackIOS/Game-PolyMod/PolyModLoader.js
+          test -s PolyTrackIOS/Game-PolyMod/PolyTypes.js
+          test -s PolyTrackIOS/Game-PolyMod/.polytrack-ios-version
           test -s PolyTrackIOS/Game-0.5.2/index.html
           test -s PolyTrackIOS/Game-0.5.2/main.bundle.js
           test -s PolyTrackIOS/Game-0.5.2/simulation_worker.bundle.js
@@ -80,6 +93,12 @@ jobs:
           ditto PolyTrackIOS/Game "$APP_PATH/Game"
           mkdir -p "$APP_PATH/Game-0.5.2"
           ditto PolyTrackIOS/Game-0.5.2 "$APP_PATH/Game-0.5.2"
+          mkdir -p "$APP_PATH/Game-Normal"
+          ditto PolyTrackIOS/Game-Normal "$APP_PATH/Game-Normal"
+          mkdir -p "$APP_PATH/Game-PolyMod"
+          ditto PolyTrackIOS/Game-PolyMod "$APP_PATH/Game-PolyMod"
+          test -s "$APP_PATH/Game-PolyMod/PolyModLoader.js"
+          test -s "$APP_PATH/Game-Normal/main.bundle.js"
           test -s "$APP_PATH/Game-0.5.2/mods.js"
           test -s "$APP_PATH/Game/index.html"
           test -s "$APP_PATH/Game/main.bundle.js"
@@ -87,7 +106,7 @@ jobs:
           test -s "$APP_PATH/Game/lib/polytrack_physics.js"
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           cp -R "$APP_PATH" "$RUNNER_TEMP/ipa/Payload/PolyTrack.app"
-          IPA_PATH="$GITHUB_WORKSPACE/PolyTrack-Offline-v0.6.0-unsigned.ipa"
+          IPA_PATH="$GITHUB_WORKSPACE/PolyTrack-iOS-three-builds-unsigned.ipa"
           (cd "$RUNNER_TEMP/ipa" && /usr/bin/zip -qry "$IPA_PATH" Payload)
           test -s "$IPA_PATH"
           python3 - "$IPA_PATH" <<'PY'
@@ -99,7 +118,7 @@ jobs:
               bad_file = ipa.testzip()
               if bad_file:
                   raise SystemExit(f"Corrupt IPA entry: {bad_file}")
-              expected = ("Game/index.html", "Game/main.bundle.js", "Game/simulation_worker.bundle.js", "Game/lib/polytrack_physics.js", "Game/polytrack_physics.wasm", "Game/tracks/official/summer1.track", "Game-0.5.2/index.html", "Game-0.5.2/main.bundle.js", "Game-0.5.2/simulation_worker.bundle.js", "Game-0.5.2/mods.js", "Game-0.5.2/lib/ammo.wasm.wasm")
+              expected = ("Game/index.html", "Game/main.bundle.js", "Game/simulation_worker.bundle.js", "Game/lib/polytrack_physics.js", "Game/polytrack_physics.wasm", "Game/tracks/official/summer1.track", "Game-0.5.2/index.html", "Game-0.5.2/main.bundle.js", "Game-0.5.2/simulation_worker.bundle.js", "Game-0.5.2/mods.js", "Game-0.5.2/lib/ammo.wasm.wasm", "Game-Normal/index.html", "Game-Normal/main.bundle.js", "Game-Normal/simulation_worker.bundle.js", "Game-PolyMod/index.html", "Game-PolyMod/main.bundle.js", "Game-PolyMod/simulation_worker.bundle.js", "Game-PolyMod/PolyModLoader.js", "Game-PolyMod/PolyTypes.js")
               for suffix in expected:
                   matches = [name for name in names if name.endswith(suffix)]
                   if not matches:
@@ -132,9 +151,15 @@ jobs:
           ditto PolyTrackIOS/Game "$APP_PATH/Game"
           mkdir -p "$APP_PATH/Game-0.5.2"
           ditto PolyTrackIOS/Game-0.5.2 "$APP_PATH/Game-0.5.2"
+          mkdir -p "$APP_PATH/Game-Normal"
+          ditto PolyTrackIOS/Game-Normal "$APP_PATH/Game-Normal"
+          mkdir -p "$APP_PATH/Game-PolyMod"
+          ditto PolyTrackIOS/Game-PolyMod "$APP_PATH/Game-PolyMod"
+          test -s "$APP_PATH/Game-PolyMod/PolyModLoader.js"
+          test -s "$APP_PATH/Game-Normal/main.bundle.js"
           test -s "$APP_PATH/Game-0.5.2/mods.js"
           test -s "$APP_PATH/Game/lib/polytrack_physics.js"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-iOS-Simulator-v0.6.0.zip
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-iOS-Simulator-three-builds.zip
 
       - name: Build native macOS app for Monterey Intel
         run: |
@@ -161,6 +186,10 @@ jobs:
           ditto PolyTrackIOS/Game "$APP_PATH/Contents/Resources/Game"
           mkdir -p "$APP_PATH/Contents/Resources/Game-0.5.2"
           ditto PolyTrackIOS/Game-0.5.2 "$APP_PATH/Contents/Resources/Game-0.5.2"
+          mkdir -p "$APP_PATH/Contents/Resources/Game-Normal"
+          ditto PolyTrackIOS/Game-Normal "$APP_PATH/Contents/Resources/Game-Normal"
+          mkdir -p "$APP_PATH/Contents/Resources/Game-PolyMod"
+          ditto PolyTrackIOS/Game-PolyMod "$APP_PATH/Contents/Resources/Game-PolyMod"
           GAME="$APP_PATH/Contents/Resources/Game"
           FIRST_GAME="$APP_PATH/Contents/Resources/Game-FirstBuild"
           OLD_SOURCE="$RUNNER_TEMP/polytrack-v052"
@@ -198,9 +227,9 @@ jobs:
           test -s "$GAME/polytrack_physics.wasm"
           test -s "$GAME/lib/draco/draco_decoder.wasm"
           test -s "$GAME/lib/draco/draco_wasm_wrapper.js"
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip
-          test -s PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip
-          python3 - PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip <<'PY'
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-macOS-Monterey-Intel-three-builds.zip
+          test -s PolyTrack-macOS-Monterey-Intel-three-builds.zip
+          python3 - PolyTrack-macOS-Monterey-Intel-three-builds.zip <<'PY'
           import sys, zipfile
           archive = sys.argv[1]
           expected = (
@@ -215,6 +244,11 @@ jobs:
               "Contents/Resources/Game-FirstBuild/simulation_worker.bundle.js",
               "Contents/Resources/Game-FirstBuild/lib/ammo.wasm.wasm",
               "Contents/Resources/Game-FirstBuild/lib/draco/draco_decoder.wasm",
+              "Contents/Resources/Game-Normal/index.html",
+              "Contents/Resources/Game-Normal/main.bundle.js",
+              "Contents/Resources/Game-PolyMod/index.html",
+              "Contents/Resources/Game-PolyMod/PolyModLoader.js",
+              "Contents/Resources/Game-PolyMod/PolyTypes.js",
           )
           with zipfile.ZipFile(archive) as z:
               bad = z.testzip()
@@ -227,21 +261,21 @@ jobs:
                       raise SystemExit(f"Missing Mac artifact asset: {suffix}")
                   print("Verified:", matches[0])
           PY
-          ls -lh PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip
+          ls -lh PolyTrack-macOS-Monterey-Intel-three-builds.zip
 
       - name: Upload native macOS app
         uses: actions/upload-artifact@v4
         with:
-          name: PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0
-          path: PolyTrack-macOS-Monterey-Intel-v0.5.2-and-v0.6.0.zip
+          name: PolyTrack-macOS-Monterey-Intel-three-builds
+          path: PolyTrack-macOS-Monterey-Intel-three-builds.zip
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: PolyTrack-Offline-v0.6.0-unsigned-IPA
-          path: PolyTrack-Offline-v0.6.0-unsigned.ipa
+          name: PolyTrack-iOS-three-builds-unsigned-IPA
+          path: PolyTrack-iOS-three-builds-unsigned.ipa
           if-no-files-found: error
           retention-days: 14
 
@@ -249,6 +283,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PolyTrack-iOS-Simulator-v0.6.0
-          path: PolyTrack-iOS-Simulator-v0.6.0.zip
+          path: PolyTrack-iOS-Simulator-three-builds.zip
           if-no-files-found: error
           retention-days: 14

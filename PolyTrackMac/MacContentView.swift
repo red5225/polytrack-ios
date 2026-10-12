@@ -8,13 +8,32 @@ private enum MacTracksideStyle {
 }
 
 private enum LaunchChoice: String, CaseIterable, Identifiable {
-    case firstBuild
-    case currentBuild
+    case normalBuild
+    case customBuild
+    case polyModBuild
 
     var id: String { rawValue }
-    var directoryName: String { self == .firstBuild ? "Game-FirstBuild" : "Game" }
-    var title: String { self == .firstBuild ? "PolyTrack 0.5.2" : "PolyTrack 0.6.0" }
-    var subtitle: String { self == .firstBuild ? "Classic release · extra diagnostic popups removed" : "Newer release · diagnostics enabled" }
+    var directoryName: String {
+        switch self {
+        case .normalBuild: return "Game-Normal"
+        case .customBuild: return "Game"
+        case .polyModBuild: return "Game-PolyMod"
+        }
+    }
+    var title: String {
+        switch self {
+        case .normalBuild: return "PolyTrack · Normal"
+        case .customBuild: return "PolyTrack · Custom Mods"
+        case .polyModBuild: return "PolyModLoader"
+        }
+    }
+    var subtitle: String {
+        switch self {
+        case .normalBuild: return "Clean game · no custom mods"
+        case .customBuild: return "Custom build · gameplay and HUD mods"
+        case .polyModBuild: return "Separate game build · PolyModLoader"
+        }
+    }
 }
 
 struct MacContentView: View {
@@ -91,7 +110,7 @@ struct MacContentView: View {
             ForEach(LaunchChoice.allCases) { choice in
                 Button { selectedBuild = choice; isLoading = true; loadFailed = false; reloadToken = UUID() } label: {
                     HStack(spacing: 14) {
-                        Image(systemName: choice == .firstBuild ? "play.circle" : "bolt.circle.fill")
+                        Image(systemName: choice == .normalBuild ? "play.circle" : choice == .customBuild ? "bolt.circle.fill" : "puzzlepiece.extension")
                             .font(.system(size: 27)).foregroundStyle(MacTracksideStyle.accent)
                         VStack(alignment: .leading, spacing: 5) {
                             Text(choice.title).font(.system(size: 16, weight: .bold)).foregroundStyle(.white)

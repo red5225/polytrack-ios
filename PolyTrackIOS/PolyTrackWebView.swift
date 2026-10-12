@@ -67,7 +67,13 @@ struct PolyTrackWebView: UIViewRepresentable {
             create: true
         )
         let appFolder = documents.appendingPathComponent("PolyTrack", isDirectory: true)
-        let bundleFolderName = gameVersion == "0.5.2" ? "Game-0.5.2" : "Game"
+        let bundleFolderName: String
+        switch gameVersion {
+        case "polymod": bundleFolderName = "Game-PolyMod"
+        case "custom", "0.6.0": bundleFolderName = "Game"
+        case "0.5.2": bundleFolderName = "Game-0.5.2" // legacy saved preference
+        default: bundleFolderName = "Game-Normal"
+        }
         let editableFolderName = bundleFolderName
         let editableGame = appFolder.appendingPathComponent(editableFolderName, isDirectory: true)
 

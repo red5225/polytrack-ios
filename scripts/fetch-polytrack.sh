@@ -16,6 +16,7 @@ rm -rf "$DEST"
 mkdir -p "$DEST/images"
 cp "$SOURCE_DIR/index.html" "$DEST/index.html"
 cp "$SOURCE_DIR/js/main.bundle.js" "$DEST/main.bundle.js"
+cp "$SOURCE_DIR/js/main.bundle.js" "$TMP_DIR/main.bundle.original.js"
 cp "$SOURCE_DIR/js/error_screen.bundle.js" "$DEST/error_screen.bundle.js"
 cp "$SOURCE_DIR/js/lb.js" "$DEST/lb.js"
 cp "$SOURCE_DIR/js/manifest.json" "$DEST/manifest.json"
@@ -90,6 +91,7 @@ PY
 for asset in simulation_worker.bundle.js lib/polytrack_physics.js polytrack_physics.wasm forced_square.json lib/draco/draco_decoder.wasm lib/draco/draco_wasm_wrapper.js 124.bundle.js 142.bundle.js 168.bundle.js 280.bundle.js 57.bundle.js 789.bundle.js 982.bundle.js; do
   download_asset "$asset"
 done
+cp "$DEST/simulation_worker.bundle.js" "$TMP_DIR/simulation_worker.bundle.original.js"
 
 # Wire the 0.6.0 menu state into the real simulation worker. Exact-match guards
 # intentionally fail the build if upstream changes the engine signatures.
@@ -251,8 +253,32 @@ test -s "$DEST/tracks/official/winter5.track"
 test -s "$DEST/tracks/community/marvelous_marble.track"
 test -s "$DEST/models/car.glb"
 test -s "$DEST/images/icon.svg"
-printf '0.6.0\n' > "$DEST/.polytrack-ios-version"
+printf '0.6.0-custom-mods\n' > "$DEST/.polytrack-ios-version"
 grep -q '0.6.0' "$DEST/main.bundle.js"
+
+# Build a separate unmodded 0.6.0 copy with original main and worker bundles.
+NORMAL_DEST="$ROOT_DIR/PolyTrackIOS/Game-Normal"
+rm -rf "$NORMAL_DEST"
+cp -R "$DEST" "$NORMAL_DEST"
+cp "$TMP_DIR/main.bundle.original.js" "$NORMAL_DEST/main.bundle.js"
+cp "$TMP_DIR/simulation_worker.bundle.original.js" "$NORMAL_DEST/simulation_worker.bundle.js"
+python3 - "$NORMAL_DEST/index.html" <<'PYNORMAL'
+from pathlib import Path
+import re, sys
+p=Path(sys.argv[1]); html=p.read_text(encoding="utf-8")
+tag = '<script defer src="./mods.js"></script>'
+if html.count(tag) != 1: raise SystemExit("Normal build expected exactly one custom mods script tag")
+html = html.replace(tag, '', 1)
+p.write_text(html, encoding="utf-8")
+PYNORMAL
+rm -f "$NORMAL_DEST/mods.js" "$NORMAL_DEST/GAME-FILES.txt"
+printf '0.6.0-normal\n' > "$NORMAL_DEST/.polytrack-ios-version"
+if grep -q './mods.js' "$NORMAL_DEST/index.html"; then echo "Normal build unexpectedly loads mods.js" >&2; exit 1; fi
+if grep -q '__ptCheats.autoThrottle' "$NORMAL_DEST/simulation_worker.bundle.js"; then echo "Normal build unexpectedly contains custom gameplay hooks" >&2; exit 1; fi
+cat > "$NORMAL_DEST/GAME-FILES.txt" <<'TXT'
+POLYTRACK IOS — NORMAL BUILD
+Clean PolyTrack 0.6.0 without the custom gameplay mod menu or worker patches. Switch to Custom Mods or PolyModLoader in app settings for other builds.
+TXT
 test -s "$DEST/error-failsafe.js"
 test -s "$DEST/mods.js"
 grep -q './mods.js' "$DEST/index.html"

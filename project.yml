@@ -13,10 +13,16 @@ targets:
         excludes:
           - Game/**
           - Game-0.5.2/**
+          - Game-Normal/**
+          - Game-PolyMod/**
     resources:
       - path: PolyTrackIOS/Game
         type: folder
       - path: PolyTrackIOS/Game-0.5.2
+        type: folder
+      - path: PolyTrackIOS/Game-Normal
+        type: folder
+      - path: PolyTrackIOS/Game-PolyMod
         type: folder
     settings:
       base:
@@ -49,6 +55,10 @@ targets:
       - path: PolyTrackIOS/Game
         type: folder
       - path: PolyTrackIOS/Game-0.5.2
+        type: folder
+      - path: PolyTrackIOS/Game-Normal
+        type: folder
+      - path: PolyTrackIOS/Game-PolyMod
         type: folder
     settings:
       base:
