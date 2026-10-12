@@ -22,7 +22,13 @@ final class PolyTrackLocalServer {
         do {
             let listener: NWListener
             if let preferredPort {
-                listener = try NWListener(using: .tcp, on: preferredPort)
+                do {
+                    listener = try NWListener(using: .tcp, on: preferredPort)
+                } catch {
+                    // If a previous listener is still releasing its stable port, keep the
+                    // game launchable on an ephemeral port rather than failing the edition switch.
+                    listener = try NWListener(using: .tcp)
+                }
             } else {
                 // macOS can switch between bundled game versions without racing a fixed-port release.
                 listener = try NWListener(using: .tcp)

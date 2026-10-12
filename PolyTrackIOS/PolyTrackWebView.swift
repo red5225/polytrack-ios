@@ -172,7 +172,16 @@ struct PolyTrackWebView: UIViewRepresentable {
         isLoading = true
         loadFailed = false
         coordinator.localServer?.stop()
-        let server = PolyTrackLocalServer(rootURL: gameDirectory)
+        // Give each bundled edition its own stable origin. Switching editions no longer
+        // races NWListener while the previous listener is still releasing port 8765.
+        let portNumber: UInt16
+        switch gameVersion {
+        case "polymod": portNumber = 8767
+        case "custom", "0.6.0": portNumber = 8766
+        case "0.5.2": portNumber = 8768
+        default: portNumber = 8765
+        }
+        let server = PolyTrackLocalServer(rootURL: gameDirectory, port: NWEndpoint.Port(rawValue: portNumber))
         coordinator.localServer = server
         server.start { [weak coordinator, weak webView] result in
             DispatchQueue.main.async {
