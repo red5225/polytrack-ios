@@ -20,6 +20,9 @@ struct MacPolyTrackWebView: NSViewRepresentable {
     }
 
     func updateNSView(_ webView: WKWebView, context: Context) {
+        // SwiftUI can reuse the NSViewRepresentable coordinator when its inputs change.
+        // Keep the selected bundle directory and bindings current before handling reloads.
+        context.coordinator.parent = self
         if context.coordinator.lastReloadToken != reloadToken {
             context.coordinator.lastReloadToken = reloadToken
             context.coordinator.loadGame(in: webView)
