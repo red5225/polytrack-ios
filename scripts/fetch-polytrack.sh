@@ -49,6 +49,20 @@ if error_tag not in html:
 path.write_text(html, encoding="utf-8")
 PY
 
+# Inject the version-specific UI mod menu into v0.6.0. Physics cheats remain marked WIP until wired to the 0.6 WASM API.
+cp "$ROOT_DIR/scripts/mods-v0.6.0.js" "$DEST/mods.js"
+python3 - "$DEST/index.html" <<'PY'
+from pathlib import Path
+import re, sys
+p=Path(sys.argv[1]); html=p.read_text(encoding="utf-8")
+tag='<script defer src="./mods.js"></script>'
+if tag not in html:
+    m=re.search(r"</head\s*>",html,re.I)
+    if not m: raise SystemExit("Cannot inject v0.6.0 mod loader: no closing head")
+    html=html[:m.start()]+tag+"\n"+html[m.start():]
+p.write_text(html,encoding="utf-8")
+PY
+
 download_asset() {
   local path="$1" target="$DEST/$1" tmp
   [[ -s "$target" ]] && return 0
@@ -160,6 +174,8 @@ test -s "$DEST/images/icon.svg"
 printf '0.6.0\n' > "$DEST/.polytrack-ios-version"
 grep -q '0.6.0' "$DEST/main.bundle.js"
 test -s "$DEST/error-failsafe.js"
+test -s "$DEST/mods.js"
+grep -q './mods.js' "$DEST/index.html"
 
 cat > "INSTALL-ON-IPHONE.txt" <<'TXT'
 PolyTrack iOS build is packaged as an unsigned IPA. GitHub Actions does not install it on your iPhone. Download the PolyTrack-Offline-v0.6.0-unsigned-IPA artifact from the latest successful run, then sideload/sign it using AltStore/SideStore or Sideloadly with a Mac/PC and your Apple ID. Tapping an unsigned IPA in the iOS Files app will not install it.
