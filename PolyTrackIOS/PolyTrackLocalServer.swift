@@ -10,15 +10,23 @@ final class PolyTrackLocalServer {
     private var listener: NWListener?
     private var didCompleteStart = false
     private let startLock = NSLock()
-    private let port = NWEndpoint.Port(rawValue: 8765)!
+    private let preferredPort: NWEndpoint.Port?
 
-    init(rootURL: URL) {
+
+    init(rootURL: URL, port: NWEndpoint.Port? = NWEndpoint.Port(rawValue: 8765)!) {
         self.rootURL = rootURL.standardizedFileURL
+        self.preferredPort = port
     }
 
     func start(completion: @escaping (Result<URL, Error>) -> Void) {
         do {
-            let listener = try NWListener(using: .tcp, on: port)
+            let listener: NWListener
+            if let preferredPort {
+                listener = try NWListener(using: .tcp, on: preferredPort)
+            } else {
+                // macOS can switch between bundled game versions without racing a fixed-port release.
+                listener = try NWListener(using: .tcp)
+            }
             self.listener = listener
             listener.newConnectionHandler = { [weak self] connection in
                 guard let self else {
@@ -31,7 +39,8 @@ final class PolyTrackLocalServer {
                 guard let self else { return }
                 switch state {
                 case .ready:
-                    guard let url = URL(string: "http://127.0.0.1:8765/index.html") else {
+                    guard let actualPort = listener.port,
+                          let url = URL(string: "http://127.0.0.1:\(actualPort.rawValue)/index.html") else {
                         self.completeStart(.failure(ServerError.badURL), completion: completion)
                         return
                     }
