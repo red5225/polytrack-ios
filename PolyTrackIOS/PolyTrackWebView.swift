@@ -11,6 +11,29 @@ struct PolyTrackWebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
+        let viewportScript = """
+        (() => {
+          const css = `
+            html, body { width: 100% !important; height: 100% !important; min-width: 100% !important; min-height: 100% !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; overscroll-behavior: none !important; }
+            body { position: fixed !important; inset: 0 !important; }
+            #screen { position: fixed !important; inset: 0 !important; display: block !important; width: 100vw !important; height: 100dvh !important; max-width: none !important; max-height: none !important; margin: 0 !important; padding: 0 !important; }
+            #ui, #transition-layer { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-width: none !important; max-height: none !important; margin: 0 !important; }
+          `;
+          const install = () => {
+            if (!document.head) return false;
+            let style = document.getElementById('polytrack-ios-viewport');
+            if (!style) { style = document.createElement('style'); style.id = 'polytrack-ios-viewport'; document.head.appendChild(style); }
+            style.textContent = css;
+            return true;
+          };
+          if (!install()) document.addEventListener('DOMContentLoaded', install, { once: true });
+          window.addEventListener('resize', install, { passive: true });
+          window.addEventListener('orientationchange', install, { passive: true });
+        })();
+        """
+        configuration.userContentController.addUserScript(
+            WKUserScript(source: viewportScript, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        )
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
         let webView = WKWebView(frame: .zero, configuration: configuration)
