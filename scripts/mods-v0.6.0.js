@@ -1,4 +1,4 @@
-/* PolyTrack 0.6.0 UI mods. Physics cheats require separate WASM-engine hooks. */
+/* PolyTrack 0.6.0 UI mods. Physics toggles are intentionally not simulated until hooked to the 0.6 WASM API. */
 (() => {
   if (window.__polyTrackModsLoaded) return;
   window.__polyTrackModsLoaded = true;
@@ -12,7 +12,7 @@
   document.documentElement.appendChild(style);
   const open = document.createElement('button'); open.id='pt-mods-button'; open.type='button'; open.textContent='MODS'; open.setAttribute('aria-label','Open PolyTrack UI mods');
   const panel = document.createElement('section'); panel.id='pt-mods-panel'; panel.hidden=true;
-  panel.innerHTML='<h3>PolyTrack Mods · 0.6.0</h3><p>Interface options for this version. The physics engine changed in 0.6.0, so classic physics cheats are not exposed until they can be hooked safely.</p>';
+  panel.innerHTML='<h3>PolyTrack Mods · 0.6.0</h3><p>Interface options for this version. Classic physics cheats are not available until compatible engine hooks are implemented.</p>';
   open.addEventListener('click',()=>{panel.hidden=!panel.hidden;});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')panel.hidden=true;});
   document.body.append(open,panel);
