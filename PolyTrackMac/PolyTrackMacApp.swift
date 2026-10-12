@@ -8,6 +8,5 @@ struct PolyTrackMacApp: App {
                 .frame(minWidth: 900, minHeight: 600)
         }
         .windowStyle(.titleBar)
-        .defaultSize(width: 1280, height: 800)
     }
 }
