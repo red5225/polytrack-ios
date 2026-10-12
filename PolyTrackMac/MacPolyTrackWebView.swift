@@ -52,7 +52,7 @@ struct MacPolyTrackWebView: NSViewRepresentable {
             parent.isLoading = true
             parent.loadFailed = false
             localServer?.stop()
-            let server = PolyTrackLocalServer(rootURL: gameDirectory)
+            let server = PolyTrackLocalServer(rootURL: gameDirectory, port: nil)
             localServer = server
             server.start { [weak self, weak webView] result in
                 DispatchQueue.main.async {
