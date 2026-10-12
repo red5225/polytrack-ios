@@ -91,6 +91,54 @@ for asset in simulation_worker.bundle.js lib/polytrack_physics.js polytrack_phys
   download_asset "$asset"
 done
 
+# Wire the 0.6.0 menu state into the real simulation worker. Exact-match guards
+# intentionally fail the build if upstream changes the engine signatures.
+python3 - "$DEST/main.bundle.js" "$DEST/simulation_worker.bundle.js" <<'PYMOD'
+from pathlib import Path
+import sys
+main_path, worker_path = map(Path, sys.argv[1:])
+main = main_path.read_text(encoding="utf-8")
+worker = worker_path.read_text(encoding="utf-8")
+def once(source, old, new, label):
+    count = source.count(old)
+    if count != 1:
+        raise SystemExit(f"Expected exactly one {label} patch target, found {count}; refusing to build")
+    return source.replace(old, new, 1)
+main = once(
+    main,
+    'new Worker("simulation_worker.bundle.js")',
+    '(function(){const w=new Worker("simulation_worker.bundle.js");const p=w.postMessage.bind(w);w.postMessage=function(d,...a){if(d&&typeof d==="object")d.__ptCheats=globalThis.PolyTrackModsState||{};return p(d,...a)};return w})()',
+    "0.6 worker state bridge",
+)
+worker = once(
+    worker,
+    'const jo=[];onmessage=t=>{jo.push(t)},PolyTrackPhysics().then',
+    'let __ptCheats={};const jo=[];onmessage=t=>{jo.push(t)},PolyTrackPhysics().then',
+    "0.6 worker cheat state",
+)
+worker = once(
+    worker,
+    'function i(i){const s=i.data;switch(s.messageType){',
+    'function i(i){const s=i.data;if(s&&s.__ptCheats)__ptCheats=Object.assign({},s.__ptCheats);switch(s.messageType){',
+    "0.6 worker message dispatcher",
+)
+worker = once(
+    worker,
+    'function a(e,i){t.ccall("updateCarModel","void",["number","boolean","boolean","boolean","boolean","boolean","number"],[e.id,i.up,i.right,i.down,i.left,i.reset,n]);return new Uint8Array(t.HEAPU8.buffer,n,s).slice().buffer}',
+    'function a(e,i){const ptUp=__ptCheats.autoThrottle?true:i.up,ptDown=__ptCheats.reverseLock?false:i.down;t.ccall("updateCarModel","void",["number","boolean","boolean","boolean","boolean","boolean","number"],[e.id,ptUp,i.right,ptDown,i.left,i.reset,n]);return new Uint8Array(t.HEAPU8.buffer,n,s).slice().buffer}',
+    "0.6 gameplay control hook",
+)
+if '__ptCheats.autoThrottle' not in worker or '__ptCheats.reverseLock' not in worker:
+    raise SystemExit("0.6 gameplay cheat hooks missing after patch")
+main_path.write_text(main, encoding="utf-8")
+worker_path.write_text(worker, encoding="utf-8")
+print("Patched 0.6.0 worker bridge: auto throttle + reverse lock")
+PYMOD
+
+grep -q 'PolyTrackModsState' "$DEST/main.bundle.js"
+grep -q '__ptCheats.autoThrottle' "$DEST/simulation_worker.bundle.js"
+grep -q '__ptCheats.reverseLock' "$DEST/simulation_worker.bundle.js"
+
 python3 - "$DEST" "$TMP_DIR/assets.txt" <<'PY'
 from pathlib import Path
 import re, sys
