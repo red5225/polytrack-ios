@@ -132,7 +132,7 @@ struct PolyTrackWebView: UIViewRepresentable {
         if let html = try? String(contentsOf: index, encoding: .utf8) {
             var updatedHTML = html
             let errorTag = "<script defer src=\\\"./error-failsafe.js\\\"></script>"
-            if !updatedHTML.contains(errorTag) {
+            if fileManager.fileExists(atPath: editableError.path) && !updatedHTML.contains(errorTag) {
                 guard let headEnd = updatedHTML.range(of: "</head>", options: .caseInsensitive) else {
                     throw GameFilesError.bundledFilesMissing
                 }
