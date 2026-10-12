@@ -112,20 +112,50 @@ main = once(
 )
 worker = once(
     worker,
-    'const jo=[];onmessage=t=>{jo.push(t)},PolyTrackPhysics().then',
-    'let __ptCheats={};const jo=[];onmessage=t=>{jo.push(t)},PolyTrackPhysics().then',
+    'const jo = [];\n      ((onmessage = (t) => {\n        jo.push(t);\n      }),\n        PolyTrackPhysics().then(async (t) => {',
+    'let __ptCheats = {};\n      const jo = [];\n      ((onmessage = (t) => {\n        jo.push(t);\n      }),\n        PolyTrackPhysics().then(async (t) => {',
     "0.6 worker cheat state",
 )
 worker = once(
     worker,
-    'function i(i){const s=i.data;switch(s.messageType){',
-    'function i(i){const s=i.data;if(s&&s.__ptCheats)__ptCheats=Object.assign({},s.__ptCheats);if(s&&s.__ptCheatPing)return;switch(s.messageType){',
+    'function i(i) {\n            const s = i.data;\n            switch (s.messageType) {',
+    'function i(i) {\n            const s = i.data;\n            if (s && s.__ptCheats) __ptCheats = Object.assign({}, s.__ptCheats);\n            if (s && s.__ptCheatPing) return;\n            switch (s.messageType) {',
     "0.6 worker message dispatcher",
 )
 worker = once(
     worker,
-    'function a(e,i){t.ccall("updateCarModel","void",["number","boolean","boolean","boolean","boolean","boolean","number"],[e.id,i.up,i.right,i.down,i.left,i.reset,n]);return new Uint8Array(t.HEAPU8.buffer,n,s).slice().buffer}',
-    'function a(e,i){const ptUp=__ptCheats.autoThrottle?true:i.up,ptDown=__ptCheats.reverseLock?false:i.down;t.ccall("updateCarModel","void",["number","boolean","boolean","boolean","boolean","boolean","number"],[e.id,ptUp,i.right,ptDown,i.left,i.reset,n]);return new Uint8Array(t.HEAPU8.buffer,n,s).slice().buffer}',
+    """function a(e, i) {
+            t.ccall(
+              "updateCarModel",
+              "void",
+              [
+                "number",
+                "boolean",
+                "boolean",
+                "boolean",
+                "boolean",
+                "boolean",
+                "number",
+              ],
+              [e.id, i.up, i.right, i.down, i.left, i.reset, n],
+            );""",
+    """function a(e, i) {
+            const ptUp = __ptCheats.autoThrottle ? true : i.up;
+            const ptDown = __ptCheats.reverseLock ? false : i.down;
+            t.ccall(
+              "updateCarModel",
+              "void",
+              [
+                "number",
+                "boolean",
+                "boolean",
+                "boolean",
+                "boolean",
+                "boolean",
+                "number",
+              ],
+              [e.id, ptUp, i.right, ptDown, i.left, i.reset, n],
+            );""",
     "0.6 gameplay control hook",
 )
 if '__ptCheats.autoThrottle' not in worker or '__ptCheats.reverseLock' not in worker:
