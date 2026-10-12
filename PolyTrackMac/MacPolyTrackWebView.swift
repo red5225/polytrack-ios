@@ -6,6 +6,7 @@ struct MacPolyTrackWebView: NSViewRepresentable {
     @Binding var isLoading: Bool
     @Binding var loadFailed: Bool
     let reloadToken: UUID
+    let gameDirectoryName: String
 
     func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
@@ -38,8 +39,8 @@ struct MacPolyTrackWebView: NSViewRepresentable {
         func loadGame(in webView: WKWebView) {
             guard let resources = Bundle.main.resourceURL else { fail(); return }
             let candidates = [
-                resources.appendingPathComponent("Game", isDirectory: true),
-                Bundle.main.bundleURL.appendingPathComponent("Game", isDirectory: true)
+                resources.appendingPathComponent(gameDirectoryName, isDirectory: true),
+                Bundle.main.bundleURL.appendingPathComponent(gameDirectoryName, isDirectory: true)
             ]
             guard let gameDirectory = candidates.first(where: {
                 FileManager.default.fileExists(atPath: $0.appendingPathComponent("index.html").path)
