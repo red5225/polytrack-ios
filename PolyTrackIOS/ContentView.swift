@@ -159,7 +159,7 @@ private struct InfoView: View {
                             }
                         }
                         section("GAME FILES", symbol: "folder") {
-                            Text("Your editable game copy is available in Files → On My iPhone → PolyTrack → Game.")
+                            Text("Your editable game copy is available in Files → On My iPhone or On My iPad → PolyTrack → Game.")
                                 .font(.system(size: 14)).foregroundStyle(.white.opacity(0.9))
                             Text("Changes to files are preserved between launches. Back up the folder before editing game code or assets.")
                                 .font(.system(size: 13)).foregroundStyle(TracksideStyle.muted)
