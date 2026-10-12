@@ -13,8 +13,8 @@ private enum LaunchChoice: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var directoryName: String { self == .firstBuild ? "Game-FirstBuild" : "Game" }
-    var title: String { self == .firstBuild ? "First Build" : "Current Build" }
-    var subtitle: String { self == .firstBuild ? "Original game copy · no extra popups" : "Latest game copy · diagnostics enabled" }
+    var title: String { self == .firstBuild ? "PolyTrack 0.5.2" : "PolyTrack 0.6.0" }
+    var subtitle: String { self == .firstBuild ? "Classic release · extra diagnostic popups removed" : "Newer release · diagnostics enabled" }
 }
 
 struct MacContentView: View {
