@@ -216,6 +216,7 @@ TXT
 
 echo "Prepared PolyTrack 0.5.2 with the historical single-player physics mod menu."
 du -sh "$DEST"
+printf '0.5.2-mods\n' > "$DEST/.polytrack-ios-version"
 test -s "$DEST/index.html"
 test -s "$DEST/main.bundle.js"
 test -s "$DEST/simulation_worker.bundle.js"
