@@ -42,8 +42,8 @@ struct MacPolyTrackWebView: NSViewRepresentable {
         func loadGame(in webView: WKWebView) {
             guard let resources = Bundle.main.resourceURL else { fail(); return }
             let candidates = [
-                resources.appendingPathComponent(gameDirectoryName, isDirectory: true),
-                Bundle.main.bundleURL.appendingPathComponent(gameDirectoryName, isDirectory: true)
+                resources.appendingPathComponent(parent.gameDirectoryName, isDirectory: true),
+                Bundle.main.bundleURL.appendingPathComponent(parent.gameDirectoryName, isDirectory: true)
             ]
             guard let gameDirectory = candidates.first(where: {
                 FileManager.default.fileExists(atPath: $0.appendingPathComponent("index.html").path)
