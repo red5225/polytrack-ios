@@ -101,7 +101,7 @@ final class PolyTrackLocalServer {
             return
         }
         let parts = requestLine.split(separator: " ")
-        guard parts.count >= 2, parts[0] == "GET" || parts[0] == "HEAD" else {
+        guard parts.count >= 2, (parts[0] == "GET" || parts[0] == "HEAD") else {
             send(connection, status: "405 Method Not Allowed", contentType: "text/plain",
                  body: Data("Method not allowed".utf8))
             return

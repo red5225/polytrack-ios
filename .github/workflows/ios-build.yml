@@ -142,10 +142,37 @@ jobs:
           test -d "$APP_PATH"
           mkdir -p "$APP_PATH/Contents/Resources/Game"
           ditto PolyTrackIOS/Game "$APP_PATH/Contents/Resources/Game"
-          test -s "$APP_PATH/Contents/Resources/Game/index.html"
-          test -s "$APP_PATH/Contents/Resources/Game/main.bundle.js"
+          GAME="$APP_PATH/Contents/Resources/Game"
+          test -s "$GAME/index.html"
+          test -s "$GAME/main.bundle.js"
+          test -s "$GAME/simulation_worker.bundle.js"
+          test -s "$GAME/polytrack_physics.wasm"
+          test -s "$GAME/lib/draco/draco_decoder.wasm"
+          test -s "$GAME/lib/draco/draco_wasm_wrapper.js"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" PolyTrack-macOS-Monterey-Intel-v0.6.0.zip
           test -s PolyTrack-macOS-Monterey-Intel-v0.6.0.zip
+          python3 - PolyTrack-macOS-Monterey-Intel-v0.6.0.zip <<'PY'
+          import sys, zipfile
+          archive = sys.argv[1]
+          expected = (
+              "Contents/Resources/Game/index.html",
+              "Contents/Resources/Game/main.bundle.js",
+              "Contents/Resources/Game/simulation_worker.bundle.js",
+              "Contents/Resources/Game/polytrack_physics.wasm",
+              "Contents/Resources/Game/lib/draco/draco_decoder.wasm",
+              "Contents/Resources/Game/lib/draco/draco_wasm_wrapper.js",
+          )
+          with zipfile.ZipFile(archive) as z:
+              bad = z.testzip()
+              if bad:
+                  raise SystemExit(f"Corrupt ZIP entry: {bad}")
+              names = z.namelist()
+              for suffix in expected:
+                  matches = [name for name in names if name.endswith(suffix)]
+                  if not matches:
+                      raise SystemExit(f"Missing Mac artifact asset: {suffix}")
+                  print("Verified:", matches[0])
+          PY
           ls -lh PolyTrack-macOS-Monterey-Intel-v0.6.0.zip
 
       - name: Upload native macOS app
