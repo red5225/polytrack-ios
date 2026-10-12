@@ -65,7 +65,7 @@ data = Path(sys.argv[1]).read_bytes()
 name = sys.argv[2].lower()
 if not data or data.lstrip().lower().startswith((b"<!doctype html", b"<html")): raise SystemExit(1)
 if name.endswith(".wasm") and not data.startswith(b"\x00asm"): raise SystemExit(1)
-if name.endswith(".track") and not data.startswith(b"PolyTrack2"): raise SystemExit(1)
+if name.endswith(".track") and not data.startswith(b"PolyTrack"): raise SystemExit(1)
 PY
   then
     rm -f "$tmp"; echo "Invalid source response for: $path" >&2; return 1
