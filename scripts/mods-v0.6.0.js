@@ -21,7 +21,7 @@
   function toggle(label,on,off) {
     const row=document.createElement('div'), name=document.createElement('span'), button=document.createElement('button');
     row.className='pt-mod-row'; name.textContent=label; button.type='button'; button.textContent='OFF'; let active=false;
-    button.addEventListener('click',()=>{try{(active?off:on)();active=!active;button.textContent=active?'ON':'OFF';}catch(err){console.warn('[PolyTrack mods]',err);button.textContent='ERR';}});
+    button.addEventListener('click',()=>{try{(active?off:on)();active=!active;button.textContent=active?'ON':'OFF';if(window.__polyTrackSimulationWorker)window.__polyTrackSimulationWorker.postMessage({__ptCheatPing:true});}catch(err){console.warn('[PolyTrack mods]',err);button.textContent='ERR';}});
     row.append(name,button); panel.append(row);
   }
   toggle('Auto throttle',()=>{cheats.autoThrottle=true;},()=>{cheats.autoThrottle=false;});
