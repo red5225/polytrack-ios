@@ -107,7 +107,7 @@ def once(source, old, new, label):
 main = once(
     main,
     'new Worker("simulation_worker.bundle.js")',
-    '(function(){const w=new Worker("simulation_worker.bundle.js");const p=w.postMessage.bind(w);w.postMessage=function(d,...a){if(d&&typeof d==="object")d.__ptCheats=globalThis.PolyTrackModsState||{};return p(d,...a)};return w})()',
+    '(function(){const w=new Worker("simulation_worker.bundle.js");globalThis.__polyTrackSimulationWorker=w;const p=w.postMessage.bind(w);w.postMessage=function(d,...a){if(d&&typeof d==="object")d.__ptCheats=globalThis.PolyTrackModsState||{};return p(d,...a)};return w})()',
     "0.6 worker state bridge",
 )
 worker = once(
@@ -119,7 +119,7 @@ worker = once(
 worker = once(
     worker,
     'function i(i){const s=i.data;switch(s.messageType){',
-    'function i(i){const s=i.data;if(s&&s.__ptCheats)__ptCheats=Object.assign({},s.__ptCheats);switch(s.messageType){',
+    'function i(i){const s=i.data;if(s&&s.__ptCheats)__ptCheats=Object.assign({},s.__ptCheats);if(s&&s.__ptCheatPing)return;switch(s.messageType){',
     "0.6 worker message dispatcher",
 )
 worker = once(
