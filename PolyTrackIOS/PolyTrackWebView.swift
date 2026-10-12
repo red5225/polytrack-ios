@@ -50,11 +50,10 @@ struct PolyTrackWebView: UIViewRepresentable {
 
         if context.coordinator.lastReloadToken != reloadToken {
             context.coordinator.lastReloadToken = reloadToken
-            if let url = webView.url, url.host == "127.0.0.1" {
-                webView.reload()
-            } else {
-                loadGame(in: webView, coordinator: context.coordinator)
-            }
+            // The token changes both for a normal reload and when the selected edition
+            // changes. Always resolve the selected bundle again; reloading the existing
+            // localhost URL would keep showing the previous edition forever.
+            loadGame(in: webView, coordinator: context.coordinator)
         }
     }
 
