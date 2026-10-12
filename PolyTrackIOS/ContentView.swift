@@ -16,12 +16,13 @@ struct ContentView: View {
     @State private var resetToken = UUID()
     @State private var showInfo = false
     @AppStorage("polytrack.keepScreenAwake") private var keepScreenAwake = true
+    @AppStorage("polytrack.gameVersion") private var gameVersion = "0.6.0"
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
             TracksideStyle.background.ignoresSafeArea()
             PolyTrackWebView(isLoading: $isLoading, loadFailed: $loadFailed,
-                             reloadToken: reloadToken, resetToken: resetToken)
+                             reloadToken: reloadToken, resetToken: resetToken, gameVersion: gameVersion)
                 .ignoresSafeArea()
 
             if !loadFailed {
@@ -106,6 +107,7 @@ struct ContentView: View {
         }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = keepScreenAwake }
         .onChange(of: keepScreenAwake) { UIApplication.shared.isIdleTimerDisabled = $0 }
+        .onChange(of: gameVersion) { _ in reloadToken = UUID(); isLoading = true; loadFailed = false }
         .animation(.easeInOut(duration: 0.2), value: isLoading)
         .animation(.easeInOut(duration: 0.2), value: loadFailed)
         .preferredColorScheme(.dark).statusBarHidden(true)
@@ -123,6 +125,7 @@ private struct InfoView: View {
     @State private var confirmReset = false
     @State private var selectedTab = 0
     @AppStorage("polytrack.keepScreenAwake") private var keepScreenAwake = true
+    @AppStorage("polytrack.gameVersion") private var gameVersion = "0.6.0"
     let onResetGameData: () -> Void
 
     var body: some View {
@@ -143,6 +146,16 @@ private struct InfoView: View {
                                 .tracking(0.5).foregroundStyle(.white)
                             Text("Tune the app for a longer, smoother play session.")
                                 .font(.system(size: 14)).foregroundStyle(TracksideStyle.muted)
+                        }
+                        section("GAME VERSION", symbol: "gamecontroller.fill") {
+                            Picker("PolyTrack version", selection: $gameVersion) {
+                                Text("0.6.0 · Newer physics").tag("0.6.0")
+                                Text("0.5.2 · Classic + mods").tag("0.5.2")
+                            }
+                            .pickerStyle(.menu)
+                            .tint(TracksideStyle.accent)
+                            Text(gameVersion == "0.5.2" ? "Classic version with the restored single-player physics mod menu." : "Newer game version. UI mods are available; physics mod compatibility is being developed separately.")
+                                .font(.system(size: 12)).foregroundStyle(TracksideStyle.muted)
                         }
                         section("DISPLAY", symbol: "sun.max.fill") {
                             Toggle(isOn: $keepScreenAwake) {
